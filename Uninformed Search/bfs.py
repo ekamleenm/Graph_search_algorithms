@@ -13,6 +13,7 @@ graph = {
 visited = []  # list for visited nodes.
 queue = []    # Initialize a queue
 
+
 def bfs(visited, graph, node):
     pass
 
