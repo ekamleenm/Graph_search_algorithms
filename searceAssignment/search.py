@@ -134,7 +134,7 @@ class Node:
 # ______________________________________________________________________________
 
 # ______________________________________________________________________________
-# Uninformed Search algorithms
+# Uninformed_search algorithms
 
 def breadth_first_graph_search(problem):
     """[Figure 3.11]
