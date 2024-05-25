@@ -1,5 +1,6 @@
 import heapq
 
+
 class Graph:
     def __init__(self):
         self.edges = {}  # key = Node: value = list of tuples [(child_node, cost_to_reach), (), ()]
