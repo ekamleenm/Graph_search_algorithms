@@ -23,20 +23,21 @@ class Graph:
         reached_nodes_costs = {start_node: 0}
 
         while open_list:
-            current_node = heapq.heappop(open_list)[1]    # Min heuristic value node popped
+            current_node = heapq.heappop(open_list)[1]  # Min heuristic value node popped
             if current_node == goal_node:
                 return self.generate_path(parent_info, current_node)
 
-            for neighbor, cost in self.edges.get(current_node,[]):
-                if neighbor not in reached_nodes_costs or reached_nodes_costs[current_node] + cost < reached_nodes_costs[neighbor]:
+            for neighbor, cost in self.edges.get(current_node, []):
+                if neighbor not in reached_nodes_costs or reached_nodes_costs[current_node] + cost < \
+                        reached_nodes_costs[neighbor]:
                     reached_nodes_costs[neighbor] = reached_nodes_costs[current_node] + cost
                     f_score = self.heuristic_node[neighbor]
-                    heapq.heappush(open_list, (f_score,neighbor))
+                    heapq.heappush(open_list, (f_score, neighbor))
                     parent_info[neighbor] = current_node
 
         return None
 
-    def generate_path(self,parent_info,current_node):
+    def generate_path(self, parent_info, current_node):
         path = []
         while current_node is not None:
             path.append(current_node)
@@ -91,4 +92,4 @@ for node, h_value in heuristics.items():
     graph.set_heuristic(node, h_value)
 
 generated_path = graph.greedy_search('Arad', 'Bucharest')
-print("path: ",generated_path)
+print("path: ", generated_path)
