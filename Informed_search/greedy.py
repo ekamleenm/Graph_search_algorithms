@@ -16,9 +16,33 @@ class Graph:
     def set_heuristic(self, key_node, heuristic_value):
         self.heuristic_node[key_node] = heuristic_value
 
-    def greedy_search(self,start_node,goal_node):
-        pass
+    def greedy_search(self, start_node, goal_node):
+        open_list = []
+        heapq.heappush(open_list, (self.heuristic_node[start_node], start_node))
+        parent_info = {start_node: None}
+        reached_nodes_costs = {start_node: 0}
 
+        while open_list:
+            current_node = heapq.heappop(open_list)[1]    # Min heuristic value node popped
+            if current_node == goal_node:
+                return self.generate_path(parent_info, current_node)
+
+            for neighbor, cost in self.edges.get(current_node,[]):
+                if neighbor not in reached_nodes_costs or reached_nodes_costs[current_node] + cost < reached_nodes_costs[neighbor]:
+                    reached_nodes_costs[neighbor] = reached_nodes_costs[current_node] + cost
+                    f_score = self.heuristic_node[neighbor]
+                    heapq.heappush(open_list, (f_score,neighbor))
+                    parent_info[neighbor] = current_node
+
+        return None
+
+    def generate_path(self,parent_info,current_node):
+        path = []
+        while current_node is not None:
+            path.append(current_node)
+            current_node = parent_info[current_node]
+
+        return path[:: -1]
 
 
 # Example usage
@@ -44,7 +68,7 @@ edges = [
 ]
 
 for edge in edges:
-    graph.add_edge(*edge)
+    graph.add_edge_to_graph(*edge)
 
 heuristics = {
     'Arad': 366,
@@ -66,5 +90,5 @@ heuristics = {
 for node, h_value in heuristics.items():
     graph.set_heuristic(node, h_value)
 
-graph.greedy_search('Arad', 'Bucharest')
-
+generated_path = graph.greedy_search('Arad', 'Bucharest')
+print("path: ",generated_path)
