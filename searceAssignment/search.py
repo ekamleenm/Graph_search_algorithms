@@ -8,7 +8,6 @@ functions.
 
 import sys
 from collections import deque
-
 from utils import *
 
 class Problem:
@@ -141,11 +140,24 @@ def breadth_first_graph_search(problem):
     Search the nearest nodes first.
     specialization of best-first algorithm for BFS.
     """
-    node = Node(problem.initial)  # FIFO queue
+    node = Node(problem.initial)
     if problem.goal_test(node.state):
-        return node, None
-    print("breadth_first_graph_search:\n Your code goes here.")
-    return None, None
+        return node, set()
+
+    frontier = deque([node])
+    explored = set()
+
+    while frontier:
+        node = frontier.popleft()
+        explored.add(tuple(node.state))  # Convert state to tuple
+
+        for child in node.expand(problem):
+            if tuple(child.state) not in explored and child not in frontier:
+                if problem.goal_test(child.state):
+                    return child, explored
+                frontier.append(child)
+
+    return None, explored
 
 
 def depth_first_graph_search(problem):
