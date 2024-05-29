@@ -141,11 +141,24 @@ def breadth_first_graph_search(problem):
     Search the nearest nodes first.
     specialization of best-first algorithm for BFS.
     """
-    node = Node(problem.initial)  # FIFO queue
+    node = Node(problem.initial)
     if problem.goal_test(node.state):
-        return node, None
-    print("breadth_first_graph_search:\n Your code goes here.")
-    return None, None
+        return node, set()
+
+    frontier = deque([node])
+    explored = set()
+
+    while frontier:
+        node = frontier.popleft()
+        explored.add(tuple(node.state))  # Convert state to tuple
+
+        for child in node.expand(problem):
+            if tuple(child.state) not in explored and child not in frontier:
+                if problem.goal_test(child.state):
+                    return child, explored
+                frontier.append(child)
+
+    return None, explored
 
 
 def depth_first_graph_search(problem):
@@ -154,11 +167,24 @@ def depth_first_graph_search(problem):
     Search the deepest nodes in the search tree first.
     Search through the successors of a problem to find a goal.
     """
-    node = Node(problem.initial)  # FIFO queue
+    node = Node(problem.initial)
     if problem.goal_test(node.state):
-        return node, None
-    print("depth_first_graph_search:\n Your code goes here.")
-    return None, None
+        return node, set()
+
+    frontier = [node]  # Use a list as a stack
+    explored = set()
+
+    while frontier:
+        node = frontier.pop()  # Pop from the end of the list
+        explored.add(tuple(node.state))  # Convert state - [] to tuple
+
+        for child in node.expand(problem):
+            if tuple(child.state) not in explored and child not in frontier:
+                if problem.goal_test(child.state):
+                    return child, explored
+                frontier.append(child)
+
+    return None, explored
 
 
 def best_first_graph_search(problem, f=None):
