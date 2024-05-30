@@ -139,20 +139,20 @@ class VacuumPlanning(Problem):
         state2 via action, assuming it costs c to get up to state1. For our problem state is (x, y) coordinate pair. 
         Rotation of the Vacuum machine costs equivalent of 0.5 unit for each 90' rotation. """
         cost = curNode.path_cost + 1  # Base cost for moving from one state to another
-        #
-        # # Calculate the cost for turning using computeTurnCost method
-        # turn_cost = self.computeTurnCost(curNode.action, action)
-        # cost += turn_cost
-        #
-        # # Apply conditional costs based on the cost function
-        # if self.env.costFunc == 'StepTurn':
-        #     cost += turn_cost  # Additional turn cost for 'StepTurn' function
-        # elif self.env.costFunc == 'StayLeft':
-        #     if state2[0] < state1[0]:  # Moving left
-        #         cost -= 0.1
-        # elif self.env.costFunc == 'StayUp':
-        #     if state2[1] > state1[1]:  # Moving up
-        #         cost -= 0.1
+
+        # Calculate the cost for turning using computeTurnCost method
+        turn_cost = self.computeTurnCost(curNode.action, action)
+        cost += turn_cost
+
+        # Apply conditional costs based on the cost function
+        if self.env.costFunc == 'StepTurn':
+            cost += turn_cost  # Additional turn cost for 'StepTurn' function
+        elif self.env.costFunc == 'StayLeft':
+            if state2[0] < state1[0]:  # Moving left
+                cost -= 0.1
+        elif self.env.costFunc == 'StayUp':
+            if state2[1] > state1[1]:  # Moving up
+                cost -= 0.1
 
         return cost
 

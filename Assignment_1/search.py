@@ -207,22 +207,35 @@ def best_first_graph_search(problem, f=None):
 
     while frontier:
         _, node = heapq.heappop(frontier)
+
         if problem.goal_test(node.state):
             return node, explored
-        explored.add(tuple(node.state))  # Convert state to tuple
+
+        explored.add(tuple(node.state))  # Convert state to tuple to be hashable
 
         for child in node.expand(problem):
-            if tuple(child.state) not in explored and child not in [n for _, n in frontier]:
+            child_state_tuple = tuple(child.state)
+
+            already_in_frontier = False
+            for _, n in frontier:
+                if n == child:
+                    already_in_frontier = True
+                    break
+
+            if child_state_tuple not in explored and not already_in_frontier:
                 heapq.heappush(frontier, (f(child), child))
-            elif child in [n for _, n in frontier]:
-                index = next(i for i, (_, n) in enumerate(frontier) if n == child)
-                if f(child) < frontier[index][0]:
+
+            elif already_in_frontier:
+                index = None
+                for i, (_, n) in enumerate(frontier):
+                    if n == child:
+                        index = i
+                        break
+
+                if index is not None and f(child) < frontier[index][0]:
                     del frontier[index]
                     heapq.heappush(frontier, (f(child), child))
                     heapq.heapify(frontier)
-                    print("Frontier is :")
-                    for i in frontier:
-                        print(i)
 
     return None, explored
 
