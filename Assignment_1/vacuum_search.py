@@ -67,11 +67,11 @@ class VacuumPlanning(Problem):
         elif self.searchType == 'DFS':
             path, explored = depth_first_graph_search(self)
         elif self.searchType == 'UCS':
-            path, explored = best_first_graph_search(self, lambda node: node.path_cost)
+            path, explored = uniform_cost_search(self)
         elif self.searchType == 'Greedy':
-            path, explored = best_first_graph_search(self, None)
+            path, explored = greedy_best_first_graph_search(self, f=self.h)
         elif self.searchType == 'A*':
-            path, explored = astar_search(self, None)
+            path, explored = astar_search(self, h=None)
         else:
             raise 'NameError'
         
@@ -138,22 +138,21 @@ class VacuumPlanning(Problem):
         """To be used for UCS and A* search. Returns the cost of a solution path that arrives at state2 from
         state2 via action, assuming it costs c to get up to state1. For our problem state is (x, y) coordinate pair. 
         Rotation of the Vacuum machine costs equivalent of 0.5 unit for each 90' rotation. """
-        print("path_cost: to be done by students")
         cost = curNode.path_cost + 1  # Base cost for moving from one state to another
-
-        # Calculate the cost for turning using computeTurnCost method
-        turn_cost = self.computeTurnCost(curNode.action, action)
-        cost += turn_cost
-
-        # Apply conditional costs based on the cost function
-        if self.env.costFunc == 'StepTurn':
-            cost += turn_cost  # Additional turn cost for 'StepTurn' function
-        elif self.env.costFunc == 'StayLeft':
-            if state2[0] < state1[0]:  # Moving left
-                cost -= 0.1
-        elif self.env.costFunc == 'StayUp':
-            if state2[1] > state1[1]:  # Moving up
-                cost -= 0.1
+        #
+        # # Calculate the cost for turning using computeTurnCost method
+        # turn_cost = self.computeTurnCost(curNode.action, action)
+        # cost += turn_cost
+        #
+        # # Apply conditional costs based on the cost function
+        # if self.env.costFunc == 'StepTurn':
+        #     cost += turn_cost  # Additional turn cost for 'StepTurn' function
+        # elif self.env.costFunc == 'StayLeft':
+        #     if state2[0] < state1[0]:  # Moving left
+        #         cost -= 0.1
+        # elif self.env.costFunc == 'StayUp':
+        #     if state2[1] > state1[1]:  # Moving up
+        #         cost -= 0.1
 
         return cost
 
@@ -173,7 +172,7 @@ class VacuumPlanning(Problem):
         Dirty rooms which are maintained in env.dirtyRooms.
         """
         minDist = math.inf
-        for (x1, y1) in self.env.dirtyRooms:  # Correct access to dirtyRooms
+        for (x1, y1) in self.env.dirtyRooms:
             dist = distance_manhattan(pos, (x1, y1))
             if dist < minDist:
                 minDist = dist
@@ -185,7 +184,7 @@ class VacuumPlanning(Problem):
         hint: Use distance_euclid() in utils.py"""
         print("findMinEuclidDist: to be done by students.")
         minDist = math.inf
-        for (x1, y1) in self.env.dirtyRooms:  # Access dirtyRooms from self.env
+        for (x1, y1) in self.env.dirtyRooms:
             dist = distance_euclid(pos, (x1, y1))
             if dist < minDist:
                 minDist = dist

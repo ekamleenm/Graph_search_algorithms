@@ -11,6 +11,7 @@ from collections import deque
 
 from utils import *
 
+
 class Problem:
     """The abstract class for a formal problem. You should subclass
     this and implement the methods actions and result, and possibly
@@ -106,7 +107,6 @@ class Node:
         """Return the sequence of actions to go from the root to this node."""
         return [node.action for node in self.path()[1:]]
 
-
     def path(self):
         """Return a list of nodes forming the path from the root to this node."""
         node, path_back = self, []
@@ -196,9 +196,35 @@ def best_first_graph_search(problem, f=None):
     values will be cached on the nodes as they are computed. So after doing
     a best first search you can examine the f values of the path returned."""
     f = memoize(f or problem.h, 'f')
+    print('this is for ' + problem.searchType)
     node = Node(problem.initial)
-    print("best_first_graph_search: Your code goes here")
-    return None, None
+    if problem.goal_test(node.state):
+        return node, set()
+
+    frontier = []
+    heapq.heappush(frontier, (f(node), node))
+    explored = set()
+
+    while frontier:
+        _, node = heapq.heappop(frontier)
+        if problem.goal_test(node.state):
+            return node, explored
+        explored.add(tuple(node.state))  # Convert state to tuple
+
+        for child in node.expand(problem):
+            if tuple(child.state) not in explored and child not in [n for _, n in frontier]:
+                heapq.heappush(frontier, (f(child), child))
+            elif child in [n for _, n in frontier]:
+                index = next(i for i, (_, n) in enumerate(frontier) if n == child)
+                if f(child) < frontier[index][0]:
+                    del frontier[index]
+                    heapq.heappush(frontier, (f(child), child))
+                    heapq.heapify(frontier)
+                    print("Frontier is :")
+                    for i in frontier:
+                        print(i)
+
+    return None, explored
 
 
 def uniform_cost_search(problem):
@@ -226,7 +252,6 @@ def astar_search(problem, h=None):
 
 # ______________________________________________________________________________
 # A* heuristics 
-
 
 
 # Pre-defined actions for PeakFindingProblem
@@ -332,7 +357,6 @@ def RandomGraph(nodes=list(range(10)), min_links=2, width=400, height=300,
     return g
 
 
-
 class GraphProblem(Problem):
     """The problem of searching a graph from one node to another."""
 
@@ -387,8 +411,6 @@ class GraphProblemStochastic(GraphProblem):
     def path_cost(self):
         raise NotImplementedError
 
-
 # ______________________________________________________________________________
 
 # ______________________________________________________________________________
-
