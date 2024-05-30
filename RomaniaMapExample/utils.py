@@ -373,24 +373,19 @@ def turn_left(heading):
     return turn_heading(heading, LEFT)
 
 
-def distance_euclid(a, b):
-    """The Euclidean distance between two (x, y) points."""
+def distance(a, b):
+    """The distance between two (x, y) points."""
     xA, yA = a
     xB, yB = b
     return np.hypot((xA - xB), (yA - yB))
 
 
 def distance_squared(a, b):
-    """The square of the Euclidean distance between two (x, y) points."""
+    """The square of the distance between two (x, y) points."""
     xA, yA = a
     xB, yB = b
     return (xA - xB) ** 2 + (yA - yB) ** 2
 
-def distance_manhattan(a, b):
-    """Manhattan distance of 2 point returned"""
-    xA, yA = a
-    xB, yB = b
-    return abs(xA - xB) + abs(yA-yB)
 
 # ______________________________________________________________________________
 # Misc Functions
