@@ -135,7 +135,7 @@ class VacuumPlanning(Problem):
 
     def path_cost(self, curNode, state1, action, state2):
         """To be used for UCS and A* search. Returns the cost of a solution path that arrives at state2 from
-        state2 via action, assuming it costs c to get up to state1. For our problem state is (x, y) coordinate pair. 
+        state2 via action, assuming it costs c to get up to state1. For our problem state is (x, y) coordinate pair.
         Rotation of the Vacuum machine costs equivalent of 0.5 unit for each 90' rotation. """
         base_cost = 1
         # turn_cost = self.computeTurnCost(curNode.action, action)
@@ -183,7 +183,7 @@ class VacuumPlanning(Problem):
         return minDist if minDist != math.inf else 0
 
     def findMinEuclidDist(self, pos):
-        """find min Euclidean dist to any of the dirty rooms 
+        """find min Euclidean dist to any of the dirty rooms
         hint: Use distance_euclid() in utils.py"""
         print("findMinEuclidDist: to be done by students.")
         minDist = math.inf
@@ -197,10 +197,11 @@ class VacuumPlanning(Problem):
     def h(self, node):
         """ Return the heuristic value for a given state. For this problem use minimum Manhattan
         distance to a dirty room, among all the dirty rooms.
-        hint: 
+        hint:
         """
         heur = self.findMinManhattanDist(node.state)
         return heur
+
 
 def agent_label(agt):
     """creates a label based on direction"""
