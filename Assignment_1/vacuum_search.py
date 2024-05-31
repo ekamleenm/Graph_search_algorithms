@@ -30,6 +30,7 @@ costFunctions = ['Step', 'StepTurn', 'StayLeft', 'StayUp']
 
 args = dict()
 
+
 class VacuumPlanning(Problem):
     """ The problem of find the next room to clean in a grid of m x n rooms.
     A state is represented by state of the grid cells locations. Each room is specified by index set
@@ -49,7 +50,6 @@ class VacuumPlanning(Problem):
         self.searchType = searchtype
         env.agent.direction = 'UP'  #initial direction of the agent.
         self.agent = env.agent
-
 
     def generateSolution(self):
         """ generate full path to the next goal based on type of the search chosen by user"""
@@ -74,8 +74,8 @@ class VacuumPlanning(Problem):
             path, explored = astar_search(self, h=None)
         else:
             raise 'NameError'
-        
-        if ( path != None):
+
+        if (path != None):
             self.env.set_solution(path)
         else:
             print("There is no solution!\n")
@@ -91,7 +91,6 @@ class VacuumPlanning(Problem):
 
     def generateNextSolution(self):
         self.generateSolution()
-
 
     def actions(self, state):
         """ Return the actions that can be executed in the given state.
@@ -117,7 +116,7 @@ class VacuumPlanning(Problem):
     def result(self, state, action):
         """ Given state and action, return a new state that is the result of the action.
         Action is assumed to be a valid action for the state """
-        self.agent.direction = action   
+        self.agent.direction = action
         new_state = list(state)
         if action == 'RIGHT':
             new_state[0] += 1
@@ -138,26 +137,27 @@ class VacuumPlanning(Problem):
         """To be used for UCS and A* search. Returns the cost of a solution path that arrives at state2 from
         state2 via action, assuming it costs c to get up to state1. For our problem state is (x, y) coordinate pair. 
         Rotation of the Vacuum machine costs equivalent of 0.5 unit for each 90' rotation. """
-        cost = curNode.path_cost + 1  # Base cost for moving from one state to another
+        base_cost = 1
+        # turn_cost = self.computeTurnCost(curNode.action, action)
+        total_cost = curNode.path_cost
 
-        # Calculate the cost for turning using computeTurnCost method
-        turn_cost = self.computeTurnCost(curNode.action, action)
-        cost += cost + cost*turn_cost
-
-        # Apply conditional costs based on the cost function
-        if self.env.costFunc == 'StepTurn':
-            if turn_cost == 0.5:
-                cost += 1
-            elif turn_cost == 1:
-                cost += 2
+        if self.env.costFunc == 'Step':
+            total_cost += base_cost
+        elif self.env.costFunc == 'StepTurn':
+            turn_cost = self.computeTurnCost(curNode.action, action)
+            total_cost += turn_cost
         elif self.env.costFunc == 'StayLeft':
-            if state2[0] < state1[0]:  # Moving left
-                cost -= 0.1
+            if state2[0] < state1[0]:
+                total_cost -= 0.1
+            else:
+                total_cost += 0.1
         elif self.env.costFunc == 'StayUp':
-            if state2[1] > state1[1]:  # Moving up
-                cost -= 0.1
+            if state2[1] < state1[1]:
+                total_cost -= 0.1
+            else:
+                total_cost += 0.1
 
-        return cost
+        return total_cost
 
     def computeTurnCost(self, action1, action):
         if action1 == action:
@@ -202,7 +202,6 @@ class VacuumPlanning(Problem):
         heur = self.findMinManhattanDist(node.state)
         return heur
 
-
 def agent_label(agt):
     """creates a label based on direction"""
     dir = agt.direction
@@ -216,9 +215,11 @@ def agent_label(agt):
 
     return lbl
 
+
 def is_agent_label(lbl):
     """determines if the label is one of the labels tht agents have: ^ v < or >"""
     return lbl == '^' or lbl == 'v' or lbl == '<' or lbl == '>'
+
 
 class Gui(VacuumEnvironment):
     """This is a two-dimensional GUI environment. Each location may be
@@ -269,8 +270,7 @@ class Gui(VacuumEnvironment):
                 self.delete_thing(self.agents[0])
             self.add_thing(Agent(), (xi, yi))
             self.buttons[yi][xi].config(bg='white', text=agent_label(self.agent), state='normal')
-        
-        
+
         self.searchType = searchTypes[0]
         self.agent.performance = 0
         self.direction = Direction("up")
@@ -288,56 +288,59 @@ class Gui(VacuumEnvironment):
     def createFixedBlockingCells(self):
         """create a fixed pattern internal wall blocks. Bellow blks are collection of L-shape walls"""
         x1 = wid // 10
-        y1 = x1+1
+        y1 = x1 + 1
         x2 = x1 + 1
-        y2 = wid//2
+        y2 = wid // 2
         #lower left block
-        blk_ll = [(x1, y1), (x1, y1+1), (x1, y1+2), (x1, y1+3), (x1+1, y1+3), (x1+2, y1+3), (x1+3, y1+3), (x1+4, y1+3), (x1+5, y1+3), (x1+6, y1+3)]
+        blk_ll = [(x1, y1), (x1, y1 + 1), (x1, y1 + 2), (x1, y1 + 3), (x1 + 1, y1 + 3), (x1 + 2, y1 + 3),
+                  (x1 + 3, y1 + 3), (x1 + 4, y1 + 3), (x1 + 5, y1 + 3), (x1 + 6, y1 + 3)]
         #upper right block
-        blk_ul = [(x2+3, y2), (x2+2, y2), (x2+1, y2), (x2, y2), (x2, y2+1), (x2, y2+2), (x2, y2+3), (x2, y2+4), (x2, y2+5), (x2, y2+6)]
+        blk_ul = [(x2 + 3, y2), (x2 + 2, y2), (x2 + 1, y2), (x2, y2), (x2, y2 + 1), (x2, y2 + 2), (x2, y2 + 3),
+                  (x2, y2 + 4), (x2, y2 + 5), (x2, y2 + 6)]
         #upper middle block
-        blk_um = [(x2+2, y2+3), (x2+3, y2+3), (x2+4, y2+3), (x2+5, y2+3)]
-        x3=wid//4 + 1
-        y3 = y1-1
+        blk_um = [(x2 + 2, y2 + 3), (x2 + 3, y2 + 3), (x2 + 4, y2 + 3), (x2 + 5, y2 + 3)]
+        x3 = wid // 4 + 1
+        y3 = y1 - 1
         #lower right block
-        blk_lr = [(x3, y3+2), (x3, y3+1), (x3, y3), (x3+1, y3), (x3+2, y3), (x3+3, y3), (x3+4, y3), (x3+5, y3), (x3+6, y3), (x3+7, y3)]
-        x4 = wid//2 + 1
-        y4 = wid - wid//4
+        blk_lr = [(x3, y3 + 2), (x3, y3 + 1), (x3, y3), (x3 + 1, y3), (x3 + 2, y3), (x3 + 3, y3), (x3 + 4, y3),
+                  (x3 + 5, y3), (x3 + 6, y3), (x3 + 7, y3)]
+        x4 = wid // 2 + 1
+        y4 = wid - wid // 4
         #upper right block
-        blk_ur = [(x4, y4+2), (x4, y4+1), (x4, y4), (x4+1, y4), (x4+2, y4), (x4+3, y4), (x4+4, y4), (x4+5, y4), (x4+6, y4), (x4+6, y4-1), (4+6, y4-2)]
+        blk_ur = [(x4, y4 + 2), (x4, y4 + 1), (x4, y4), (x4 + 1, y4), (x4 + 2, y4), (x4 + 3, y4), (x4 + 4, y4),
+                  (x4 + 5, y4), (x4 + 6, y4), (x4 + 6, y4 - 1), (4 + 6, y4 - 2)]
         x5 = x4
-        y5 = wid //2
+        y5 = wid // 2
         #middle right block
-        blk_mr = [(x5, y5 + 3), (x5, y5+2), (x5, y5+1), (x5, y5), (x5, y5-1), (x5, y5-2), (x5+1, y5-2), (x5+2, y5-2)]
+        blk_mr = [(x5, y5 + 3), (x5, y5 + 2), (x5, y5 + 1), (x5, y5), (x5, y5 - 1), (x5, y5 - 2), (x5 + 1, y5 - 2),
+                  (x5 + 2, y5 - 2)]
         x6 = wid // 2
         y6 = y3 + 2
-        blk_ml = [(x6, y6), (x6+1, y6), (x6+2, y6), (x6 +3, y6), (x6+4, y6), (x6+5, y6)]
+        blk_ml = [(x6, y6), (x6 + 1, y6), (x6 + 2, y6), (x6 + 3, y6), (x6 + 4, y6), (x6 + 5, y6)]
         #right middle column
         x7 = wid - 2
         y7 = hig // 4 + 2
-        blk_mrb = [(x7, y7), (x7-1, y7), (x7-2, y7), (x7-2, y7+1), (x7-2, y7+2), (x7-2, y7+3)]
+        blk_mrb = [(x7, y7), (x7 - 1, y7), (x7 - 2, y7), (x7 - 2, y7 + 1), (x7 - 2, y7 + 2), (x7 - 2, y7 + 3)]
         blk = blk_ll + blk_ul + blk_lr + blk_ur + blk_mr + blk_ml + blk_um + blk_mrb
 
         if (args['corner'] == True):
-            blk = blk + [(1, hig//2), (1, hig//2 - 1), (wid//3, hig - 2), (wid//3, hig-3)]
+            blk = blk + [(1, hig // 2), (1, hig // 2 - 1), (wid // 3, hig - 2), (wid // 3, hig - 3)]
 
         for pnt in blk:
             self.buttons[pnt[1]][pnt[0]].config(bg='red', text='W', disabledforeground='black')
-
 
     def createRandomBlockingCells(self):
         """next create a random number of block walls inside the grid as well"""
         xi, yi = self.agent.location
         roomCount = (self.width - 1) * (self.height - 1)
-        blockCount = random.choice(range(roomCount//7, roomCount//3))
+        blockCount = random.choice(range(roomCount // 7, roomCount // 3))
         for _ in range(blockCount):
             rownum = random.choice(range(1, self.height - 1))
             colnum = random.choice(range(1, self.width - 1))
-            while(rownum ==yi and colnum==xi):
+            while (rownum == yi and colnum == xi):
                 rownum = random.choice(range(1, self.height - 1))
                 colnum = random.choice(range(1, self.width - 1))
             self.buttons[rownum][colnum].config(bg='red', text='W', disabledforeground='black')
-
 
     def create_frames(self, h):
         """Adds h row frames to the GUI environment."""
@@ -359,7 +362,6 @@ class Gui(VacuumEnvironment):
                 button_row.append(button)
             self.buttons.append(button_row)
 
-
     def create_walls(self):
         """Creates the outer boundary walls which do not move. Also create a random number of
         internal blocks of walls."""
@@ -374,31 +376,30 @@ class Gui(VacuumEnvironment):
     def create_dirts(self):
         """ set a small random number of rooms to be dirty at random location on the grid
         This function should be called after all other objects created"""
-        self.read_env()   # this is needed to make sure wall objects are created
+        self.read_env()  # this is needed to make sure wall objects are created
 
-        if ( args['corner'] == False):
-            self.dirtCount = 6 #random.choice(range(lowDirtyCount, 2*lowDirtyCount))
+        if (args['corner'] == False):
+            self.dirtCount = 6  #random.choice(range(lowDirtyCount, 2*lowDirtyCount))
             self.dirtyRooms = {(2, 14), (15, 11), (16, 16), (10, 8), (8, 1), (7, 16)}
         else:
             self.dirtCount = 4  # 4 dirty rooms in 4 corners of the map
-            self.dirtyRooms = {(1, 1), (1, self.height-2), (self.width-2, 1), (self.width-2, self.height-2)}
+            self.dirtyRooms = {(1, 1), (1, self.height - 2), (self.width - 2, 1), (self.width - 2, self.height - 2)}
 
         for rm in self.dirtyRooms:
-            self.buttons[rm[1]][rm[0]].config(bg="grey") # or use #fff for different shades of grey
+            self.buttons[rm[1]][rm[0]].config(bg="grey")  # or use #fff for different shades of grey
 
         #self.createRandomDirtyRooms()
 
-
     def createRandomDirtyRooms(self):
         # bellow is for the case you want to have random dirty room locations. In this case comment out about 4 lines
-        numRooms = (self.width-1) * (self.height -1)
+        numRooms = (self.width - 1) * (self.height - 1)
         self.dirtCount = 10
         dirtCreated = 0
         self.dirtyRooms = set()
         #print ("lowdirtCount = ",lowDirtyCount, ", width=", self.width, ", height=", self.height)
         while dirtCreated != self.dirtCount:
-            rownum = random.choice(range(1, self.height-1))
-            colnum = random.choice(range(1, self.width-1))
+            rownum = random.choice(range(1, self.height - 1))
+            colnum = random.choice(range(1, self.width - 1))
             if self.some_things_at((colnum, rownum)):
                 continue
             self.buttons[rownum][colnum].config(bg='grey')
@@ -406,7 +407,6 @@ class Gui(VacuumEnvironment):
             self.dirtyRooms.add((colnum, rownum))
 
         print(self.dirtyRooms)
-
 
     def setSearchEngine(self, choice):
         """sets the chosen search engine for solving this problem"""
@@ -420,18 +420,17 @@ class Gui(VacuumEnvironment):
         sol = path.solution()
         self.solution = list(reversed(sol))
         self.path = []
-        if(self.agent == None):
+        if (self.agent == None):
             return
-        while(path.state != self.agent.location):
+        while (path.state != self.agent.location):
             self.path.append(path.state)
             path = path.parent
-        if(len(self.path)>0):
+        if (len(self.path) > 0):
             self.path.pop(0)
-
 
     def display_explored(self, explored):
         """display explored slots in a light pink color"""
-        if len(self.explored) > 0:     # means we have explored list from previous search. So need to clear their visual fist
+        if len(self.explored) > 0:  # means we have explored list from previous search. So need to clear their visual fist
             for (x, y) in self.explored:
                 self.buttons[y][x].config(bg='white')
 
@@ -447,7 +446,7 @@ class Gui(VacuumEnvironment):
     def add_agent(self, agt, loc):
         """add an agent to the GUI"""
         self.add_thing(Agent(), loc)
-        assert(len(self.agents) == 1)
+        assert (len(self.agents) == 1)
         # Place the agent at the provided location.
         lbl = agent_label(agt)
         self.buttons[loc[1]][loc[0]].config(bg='white', text=lbl, state='normal')
@@ -469,15 +468,14 @@ class Gui(VacuumEnvironment):
 
     def removeDirtyRoom(self, loc):
         for room in self.dirtyRooms:
-            if(room[0] == loc[0] and room[1]==loc[1]):
+            if (room[0] == loc[0] and room[1] == loc[1]):
                 self.dirtyRooms.discard(room)
                 return
         print("removeDirtyRoom: error! dirty room ({}, {}) not found".format(room[0], room[1]))
 
-
     def execute_action(self, agent, action):
         """Determines the action the agent performs."""
-        if(agent == None):
+        if (agent == None):
             return
         xi, yi = agent.location
         #print("agent at location (", xi, yi, ") and action ", action)
@@ -490,15 +488,14 @@ class Gui(VacuumEnvironment):
                 agent.performance += 10
 
                 self.delete_thing(dirt)
-                self.removeDirtyRoom(agent.location) 
+                self.removeDirtyRoom(agent.location)
                 self.buttons[yi][xi].config(bg='white', state='normal')
-        else:   # means action == 'Move'
+        else:  # means action == 'Move'
             agent.location = self.searchAgent.result(agent.location, action)
             self.buttons[yi][xi].config(text='')
             xf, yf = agent.location
             self.buttons[yf][xf].config(text=agent_label(agent))
             self.move_to(self.agent, agent.location)
-
 
     def read_env(self):
         """read_env: This sets proper wall or Dirt status based on bg color"""
@@ -531,19 +528,18 @@ class Gui(VacuumEnvironment):
             self.done = True
             return
 
-        if( self.searchEngineSet == False):
+        if (self.searchEngineSet == False):
             self.setSearchEngine(args['searchType'])
 
-        if len(self.solution) == 0: # agent has reached a dirty room. So the proper action is 'suck'
+        if len(self.solution) == 0:  # agent has reached a dirty room. So the proper action is 'suck'
             self.execute_action(self.agent, 'Suck')
             self.read_env()
             if env.dirtCount > 0 and self.searchAgent is not None:
                 self.searchAgent.generateNextSolution()
                 #self.running = False
-        else:   # agent is moving towards the next goal. So the proper action is 'move'
+        else:  # agent is moving towards the next goal. So the proper action is 'move'
             move = self.solution.pop()
             self.execute_action(self.agent, move)
-
 
     def run(self, delay=0.3):
         """Run the Environment for given number of time steps,"""
@@ -604,10 +600,13 @@ class Gui(VacuumEnvironment):
         self.costFunc = choice
         self.done = False
 
+
 """
 Our search Agents ignore environment percepts for planning. The planning is done based on static
  data from environment at the beginning. The environment is fully observable
  """
+
+
 def XYSearchAgentProgram(percept):
     pass
 
@@ -622,7 +621,8 @@ class XYSearchAgent(Agent):
         self.searchType = searchTypes[0]
         self.stepCount = 0
 
-def readCommand( argv ):
+
+def readCommand(argv):
     """
     Processes the command used to run vacuumSearch from the command line.
     """
