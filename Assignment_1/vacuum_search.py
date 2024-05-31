@@ -199,7 +199,10 @@ class VacuumPlanning(Problem):
         distance to a dirty room, among all the dirty rooms.
         hint:
         """
-        heur = self.findMinManhattanDist(node.state)
+        if args['heuristic'] == 'Manhattan':
+            heur = self.findMinManhattanDist(node.state)
+        elif args['heuristic'] == 'Euclid':
+            heur = self.findMinEuclidDist(node.state)
         return heur
 
 
