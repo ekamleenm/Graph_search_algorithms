@@ -142,11 +142,14 @@ class VacuumPlanning(Problem):
 
         # Calculate the cost for turning using computeTurnCost method
         turn_cost = self.computeTurnCost(curNode.action, action)
-        cost += turn_cost
+        cost += cost + cost*turn_cost
 
         # Apply conditional costs based on the cost function
         if self.env.costFunc == 'StepTurn':
-            cost += turn_cost  # Additional turn cost for 'StepTurn' function
+            if turn_cost == 0.5:
+                cost += 1
+            elif turn_cost == 1:
+                cost += 2
         elif self.env.costFunc == 'StayLeft':
             if state2[0] < state1[0]:  # Moving left
                 cost -= 0.1
