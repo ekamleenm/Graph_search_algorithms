@@ -201,12 +201,12 @@ def best_first_graph_search(problem, f=None):
     if problem.goal_test(node.state):
         return node, set()
 
-    frontier = []
-    heapq.heappush(frontier, (f(node), node))
+    frontier = PriorityQueue('min', f)
+    frontier.append(node)
     explored = set()
 
     while frontier:
-        _, node = heapq.heappop(frontier)
+        node = frontier.pop()
 
         if problem.goal_test(node.state):
             return node, explored
@@ -216,26 +216,13 @@ def best_first_graph_search(problem, f=None):
         for child in node.expand(problem):
             child_state_tuple = tuple(child.state)
 
-            already_in_frontier = False
-            for _, n in frontier:
-                if n == child:
-                    already_in_frontier = True
-                    break
+            if child_state_tuple not in explored and child not in frontier:
+                frontier.append(child)
 
-            if child_state_tuple not in explored and not already_in_frontier:
-                heapq.heappush(frontier, (f(child), child))
-
-            elif already_in_frontier:
-                index = None
-                for i, (_, n) in enumerate(frontier):
-                    if n == child:
-                        index = i
-                        break
-
-                if index is not None and f(child) < frontier[index][0]:
-                    del frontier[index]
-                    heapq.heappush(frontier, (f(child), child))
-                    heapq.heapify(frontier)
+            elif child in frontier:
+                if f(child) < frontier[child]:
+                    del frontier[child]
+                    frontier.append(child)
 
     return None, explored
 

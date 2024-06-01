@@ -188,7 +188,7 @@ class VacuumPlanning(Problem):
         print("findMinEuclidDist: to be done by students.")
         minDist = math.inf
         for (x1, y1) in self.env.dirtyRooms:
-            dist = distance_euclid(pos, (x1, y1))
+            dist = distance_squared(pos, (x1, y1))
             if dist < minDist:
                 minDist = dist
 
