@@ -150,7 +150,7 @@ def breadth_first_graph_search(problem):
 
     while frontier:
         node = frontier.popleft()
-        explored.add(tuple(node.state))  # Convert state to tuple
+        explored.add(tuple(node.state))
 
         for child in node.expand(problem):
             if tuple(child.state) not in explored and child not in frontier:
@@ -171,12 +171,12 @@ def depth_first_graph_search(problem):
     if problem.goal_test(node.state):
         return node, set()
 
-    frontier = [node]  # Use a list as a stack
+    frontier = [node]
     explored = set()
 
     while frontier:
-        node = frontier.pop()  # Pop from the end of the list
-        explored.add(tuple(node.state))  # Convert state - [] to tuple
+        node = frontier.pop()
+        explored.add(tuple(node.state))
 
         for child in node.expand(problem):
             if tuple(child.state) not in explored and child not in frontier:
@@ -196,7 +196,7 @@ def best_first_graph_search(problem, f=None):
     values will be cached on the nodes as they are computed. So after doing
     a best first search you can examine the f values of the path returned."""
     f = memoize(f or problem.h, 'f')
-    print('this is for ' + problem.searchType)
+
     node = Node(problem.initial)
     if problem.goal_test(node.state):
         return node, set()
@@ -211,7 +211,7 @@ def best_first_graph_search(problem, f=None):
         if problem.goal_test(node.state):
             return node, explored
 
-        explored.add(tuple(node.state))  # Convert state to tuple to be hashable
+        explored.add(tuple(node.state))
 
         for child in node.expand(problem):
             child_state_tuple = tuple(child.state)
