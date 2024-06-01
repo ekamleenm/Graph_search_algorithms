@@ -152,7 +152,7 @@ class VacuumPlanning(Problem):
             else:
                 total_cost += 0.1
         elif self.env.costFunc == 'StayUp':
-            if state2[1] < state1[1]:
+            if state1[1] < state2[1]:
                 total_cost -= 0.1
             else:
                 total_cost += 0.1
