@@ -145,7 +145,14 @@ if __name__ == '__main__':
     print(board)
 
     actions = board.generate_states()
-    print('available states after first move: ')
+    # print('available states after first move: ')
+    # for action in actions:
+    #     print(action)
+
+    board = actions[0]
+    print(board)
+
+    actions = board.generate_states()
     for action in actions:
         print(action)
 
