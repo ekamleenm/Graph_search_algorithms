@@ -23,8 +23,8 @@ class Board:
 
     # make move func
     def make_move(self, row, col):
-        # deepcopy the previous board
-        board = Board(self)
+        # create new board instance
+        board = Board()
         board.position[row, col] = self.player_1  # self.player_1  can be o or x
         # swap players
         (board.player_1, board.player_2) = (board.player_2, board.player_1)
@@ -95,19 +95,6 @@ class Board:
 
         return False
 
-    # generate legal moves/states in the current position
-    def generate_states(self):
-        # define states list (move-list ; list of available actions to consider)
-        actions = []  # list of board class instances
-        for row in range(3):
-            for col in range(3):
-                # make sure that current square is empty
-                if self.position[row, col] == self.empty_square:
-                    # append available action/ board state to action list
-                    actions.append(self.make_move(row, col))
-
-        return actions
-
     # print the board
     def __str__(self):
         # define board string representation
@@ -129,23 +116,26 @@ class Board:
 # main driver
 if __name__ == '__main__':
     board = Board()
-    print('Initial Board state: ')
+    # print(board)
+    # make move on board : this also swaps the player_1 with x or o alternatively
+    # board = board.make_move(0, 0)
+
+    # print(board)
+    # board_1 = Board(board)
+
+    # print func implicitly call __str__ func and __str__ returns a human-readable string
+    # also deep copy doesn't change the original state code/structure if we make changes to the new structure
+    # print(board_1)
+    # print(board_1.__dict__)
+    board.position = {(0, 0): 'o', (0, 1): 'o', (0, 2): 'x',
+                      (1, 0): 'o', (1, 1): 'x', (1, 2): 'x',
+                      (2, 0): 'x', (2, 1): 'x', (2, 2): 'o'}
+
+    board.player_2 = 'x'
     print(board)
-    # generate actions
-    actions = board.generate_states()
+    print('player_2: "%s"' % board.player_2)
 
-    # for action in actions:
-    #     print(action)
-
-    # take action  (make the actual move on board)
-    board = actions[0]
-
-    # print the updated board
-    print('first generated move has been made on board')
-    print(board)
-
-    actions = board.generate_states()
-    print('available states after first move: ')
-    for action in actions:
-        print(action)
-
+    if board.is_win():
+        print('Game is won: ', board.is_win())
+    else:
+        print('Game is Draw: ', board.is_draw())
