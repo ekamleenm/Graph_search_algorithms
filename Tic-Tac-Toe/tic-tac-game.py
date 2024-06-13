@@ -110,7 +110,7 @@ class TicTacToe:
         else:
             minEval = float('inf')
             for child in self.get_children(board, 'O'):
-                eval = self.minimax(child, depth - 1, True)
+                eval = self.minimax(child, depth - 1, False)
                 minEval = min(minEval, eval)
             return minEval
 
