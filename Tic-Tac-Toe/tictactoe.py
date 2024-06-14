@@ -176,10 +176,9 @@ class Board:
 # main driver
 if __name__ == '__main__':
     board = Board()
-    # start game loop
-    # board.game_loop()
-    mcts = MCTS()
-    # create Tree node instance
     root = TreeNode(board, None)
+    mcts = MCTS()
+    # exploration constant = 0 i.e. dont wanna explore
+    mcts.get_best_move(root, 0)
 
-    print(root.__dict__)
+

@@ -1,5 +1,6 @@
 # MCTS algorithm implementation
 
+# 10:26 / 25:35
 
 # packages
 import math
@@ -59,7 +60,17 @@ class MCTS:
 
     # select most promising node
     def select(self, node):
-        pass
+        # make sure that we are dealing with non-terminal nodes
+        while not node.is_terminal:
+            # case : when node is fully expanded
+            if node.is_fully_expanded:
+                node = self.get_best_move(node, 2)
+
+            # case : when the node is not fully expanded
+            else:
+                return self.expand(node)
+
+        return node
 
     # simulate the game by making random moves until reach end of the game
     def rollout(self, board):
@@ -67,6 +78,25 @@ class MCTS:
 
     def backpropogate(self, node, score):
         pass
+
+    def expand(self, node):
+        # generate the legal states/moves for the current (node)
+        states = node.board.generate_states()
+        # loop over generates states
+        for state in states:
+            # make sure that current state is not present in child_nodes {}
+            if str(state.position) not in node.children:
+                # create a new node
+                new_node = TreeNode(state, node)
+
+                # add child node to parent's node children list (actually dictionary)
+                node.children[str(state.position)] = new_node
+                # whether current node (parameter node) is fully expanded or not
+                if len(states) == len(node.children):
+                    node.is_fully_expanded = True
+
+                # return new node
+                return new_node
 
     # Select the best node bases on UCB1/UCT formula
     # we need to loop over child nodes of the below node taken as parameter
@@ -83,18 +113,18 @@ class MCTS:
             if child_node.board.player_2 == 'o':
                 current_player = -1
 
-        # get move score using UCT formula
-        move_score = current_player * child_node.score / child_node.visits + exploration_constant * math.sqrt(
-            math.log(node.visits) / child_node.visits)
+            # get move score using UCT formula
+            move_score = current_player * child_node.score / child_node.visits + exploration_constant * math.sqrt(
+                math.log(node.visits) / child_node.visits)
 
-        # better move has been found
-        if move_score > best_score:
-            best_score = move_score
-            best_moves = [child_node]
+            # better move has been found
+            if move_score > best_score:
+                best_score = move_score
+                best_moves = [child_node]
 
-        # found as good move as already available
-        elif move_score == best_score:
-            best_moves.append(child_node)
+            # found as good move as already available
+            elif move_score == best_score:
+                best_moves.append(child_node)
 
         # return one of the best moves randomly
         return random.choice(best_moves)
