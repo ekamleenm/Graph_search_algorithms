@@ -65,11 +65,36 @@ class MCTS:
     def rollout(self, board):
         pass
 
-    def backpropogate(self,node,score):
+    def backpropogate(self, node, score):
         pass
 
     # Select the best node bases on UCB1/UCT formula
-    def get_best_move(self,node,exploration_constant):
-        pass
+    # we need to loop over child nodes of the below node taken as parameter
+    def get_best_move(self, node, exploration_constant):
+        # define best score and best moves
+        best_score = float('-inf')
+        best_moves = []
 
+        # loop over child nodes
+        for child_node in node.children.values():
+            # define current player
+            if child_node.board.player_2 == 'x':
+                current_player = 1
+            if child_node.board.player_2 == 'o':
+                current_player = -1
 
+        # get move score using UCT formula
+        move_score = current_player * child_node.score / child_node.visits + exploration_constant * math.sqrt(
+            math.log(node.visits) / child_node.visits)
+
+        # better move has been found
+        if move_score > best_score:
+            best_score = move_score
+            best_moves = [child_node]
+
+        # found as good move as already available
+        elif move_score == best_score:
+            best_moves.append(child_node)
+
+        # return one of the best moves randomly
+        return random.choice(best_moves)
