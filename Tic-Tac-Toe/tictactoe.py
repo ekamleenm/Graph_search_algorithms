@@ -1,4 +1,5 @@
 from copy import deepcopy
+from mcts import *
 
 
 # Tic Tac Board class
@@ -176,4 +177,9 @@ class Board:
 if __name__ == '__main__':
     board = Board()
     # start game loop
-    board.game_loop()
+    # board.game_loop()
+
+    # create Tree node instance
+    root = TreeNode(board, None)
+
+    print(root.__dict__)
