@@ -178,7 +178,7 @@ if __name__ == '__main__':
     board = Board()
     # start game loop
     # board.game_loop()
-
+    mcts = MCTS()
     # create Tree node instance
     root = TreeNode(board, None)
 
