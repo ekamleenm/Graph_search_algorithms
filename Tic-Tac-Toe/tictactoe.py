@@ -125,34 +125,55 @@ class Board:
             board_string = "\n---------------\n'o' to move: \n---------------\n\n" + board_string
         return board_string
 
+    def game_loop(self):
+        print('\n Tic Tac Toe Using Monte Carlo Tree Search -- reinforcement learning\n')
+        print('   Type exit to quit')
+        print('   Move format x,y where x is col and y is row')
+
+        print(self)
+
+        # game loop
+        while True:
+            # user input
+            user_input = input('> ')
+            # escape condition
+            if user_input == 'exit':
+                break
+
+            if user_input == '':
+                continue
+            # parse user_input (move format: 1,2 ; col,row)
+            try:
+                row = int(user_input.split(',')[-1]) - 1
+                col = int(user_input.split(',')[0]) - 1
+
+                if self.position[row, col] != self.empty_square:
+                    print('illegal move\n')
+                    continue
+                # make move on board
+                self = self.make_move(row, col)
+
+                # make AI move here ....
+
+                print(self)
+
+                # check the game state
+                if self.is_win():
+                    print('this winner is: ')
+                    print('player "%s" has won the game!!' % self.player_2)
+                    break
+
+                if self.is_draw():
+                    print('Game is drawn!\n')
+                    break
+
+            except Exception as e:
+                print('illegal command!')
+                print('Correct format : x,y --> x is col and y is row')
+
 
 # main driver
 if __name__ == '__main__':
     board = Board()
-    print('Initial Board state: ')
-    print(board)
-    # generate actions
-    actions = board.generate_states()
-
-    # for action in actions:
-    #     print(action)
-
-    # take action  (make the actual move on board)
-    board = actions[0]
-
-    # print the updated board
-    print('first generated move has been made on board')
-    print(board)
-
-    actions = board.generate_states()
-    # print('available states after first move: ')
-    # for action in actions:
-    #     print(action)
-
-    board = actions[0]
-    print(board)
-
-    actions = board.generate_states()
-    for action in actions:
-        print(action)
-
+    # start game loop
+    board.game_loop()
