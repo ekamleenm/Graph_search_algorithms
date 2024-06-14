@@ -179,6 +179,6 @@ if __name__ == '__main__':
     root = TreeNode(board, None)
     mcts = MCTS()
     # exploration constant = 0 i.e. dont wanna explore
-    mcts.get_best_move(root, 0)
-
+    score = mcts.rollout(board)
+    print('score: ', score)
 

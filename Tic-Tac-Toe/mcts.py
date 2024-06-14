@@ -74,7 +74,25 @@ class MCTS:
 
     # simulate the game by making random moves until reach end of the game
     def rollout(self, board):
-        pass
+        # make random moves for both sides until terminal state of the game is reached
+        while not board.is_win():
+            # try to make a move
+            try:
+                # make the move on board
+                board = random.choice(board.generate_states())
+            except Exception as e:
+                print(board)
+                print("Draw State: ", board.is_draw())
+                return 0
+
+        print(board)
+        # return score from player x pov
+        if board.player_2 == 'x':
+            print('winner: ', board.player_2)
+            return 1
+        elif board.player_2 == 'o':
+            print('winner: ', board.player_2)
+            return -1
 
     def backpropogate(self, node, score):
         pass
