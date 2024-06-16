@@ -8,7 +8,8 @@ import time
 
 GameState = namedtuple('GameState', 'to_move, move, utility, board, moves')
 
-def gen_state(move = '(1, 1)', to_move='X', x_positions=[], o_positions=[], h=3, v=3):
+
+def gen_state(move='(1, 1)', to_move='X', x_positions=[], o_positions=[], h=3, v=3):
     """
         move = the move that has lead to this state,
         to_move=Whose turn is to move
@@ -60,17 +61,24 @@ def minmax_cutoff(game, state):
     player = game.to_move(state)
 
     def max_value(state, d):
-        print("Your code goes here -3pt")
-
-        return 0
+        if d == 0 or game.terminal_test(state):
+            return game.eval1(state)
+        v = -np.inf
+        for a in game.actions(state):
+            v = max(v, min_value(game.result(state, a), d - 1))
+        return v
 
     def min_value(state, d):
-        print("Your code goes here -2pt")
-
-        return 0
+        if d == 0 or game.terminal_test(state):
+            return game.eval1(state)
+        v = np.inf
+        for a in game.actions(state):
+            v = min(v, max_value(game.result(state, a), d - 1))
+        return v
 
     # Body of minmax_cutoff:
     return max(game.actions(state), key=lambda a: min_value(game.result(state, a), 0), default=None)
+
 
 # ______________________________________________________________________________
 
@@ -84,22 +92,36 @@ def alpha_beta(game, state):
     def max_value(state, alpha, beta):
         if game.terminal_test(state):
             return game.utility(state, player)
-        print("Your code goes here -3pt")
-
-        return 0
+        v = -np.inf
+        for a in game.actions(state):
+            v = max(v, min_value(game.result(state, a), alpha, beta))
+            if v >= beta:
+                return v
+            alpha = max(alpha, v)
+        return v
 
     def min_value(state, alpha, beta):
         if game.terminal_test(state):
             return game.utility(state, player)
-        print("Your code goes here -2pt")
-
-        return 0
+        v = np.inf
+        for a in game.actions(state):
+            v = min(v, max_value(game.result(state, a), alpha, beta))
+            if v <= alpha:
+                return v
+            beta = min(beta, v)
+        return v
 
     # Body of alpha_beta_search:
     alpha = -np.inf
     beta = np.inf
     best_action = None
-    print("Your code goes here -10pt")
+
+    if player == game.max_player:
+        best_action = max(game.actions(state), key=lambda a: min_value(game.result(state, a), alpha, beta),
+                          default=None)
+    else:
+        best_action = min(game.actions(state), key=lambda a: max_value(game.result(state, a), alpha, beta),
+                          default=None)
 
     return best_action
 
@@ -109,27 +131,40 @@ def alpha_beta_cutoff(game, state):
     This version cuts off search and uses an evaluation function."""
     player = game.to_move(state)
 
-    # Functions used by alpha_beta
     def max_value(state, alpha, beta, depth):
-        if game.terminal_test(state):
-            return game.utility(state, player)
-        print("Your code goes here -3pt")
-
-        return 0
+        if depth == 0 or game.terminal_test(state):
+            return game.eval(state)
+        v = -np.inf
+        for a in game.actions(state):
+            v = max(v, min_value(game.result(state, a), alpha, beta, depth - 1))
+            if v >= beta:
+                return v
+            alpha = max(alpha, v)
+        return v
 
     def min_value(state, alpha, beta, depth):
-        if game.terminal_test(state):
-            return game.utility(state, player)
-        print("Your code goes here -2pt")
-
-        return 0
+        if depth == 0 or game.terminal_test(state):
+            return game.eval(state)  # Use the evaluation function at cutoff depth
+        v = np.inf
+        for a in game.actions(state):
+            v = min(v, max_value(game.result(state, a), alpha, beta, depth - 1))
+            if v <= alpha:
+                return v
+            beta = min(beta, v)
+        return v
 
     # Body of alpha_beta_cutoff_search starts here:
     # The default test cuts off at depth d or at a terminal state
     alpha = -np.inf
     beta = np.inf
     best_action = None
-    print("Your code goes here -10pt")
+
+    if player == game.max_player:
+        best_action = max(game.actions(state), key=lambda a: min_value(game.result(state, a), alpha, beta, 0),
+                          default=None)
+    else:
+        best_action = min(game.actions(state), key=lambda a: max_value(game.result(state, a), alpha, beta, 0),
+                          default=None)
 
     return best_action
 
@@ -161,11 +196,12 @@ def random_player(game, state):
 
 def alpha_beta_player(game, state):
     """uses alphaBeta prunning with minmax, or with cutoff version, for AI player"""
-    print("Your code goes here -2pt")
+    if game.is_initial_stage():
+        return random_player(game, state)
     """Use a method to speed up at the start to avoid search down a long tree with not much outcome.
     Hint: for speedup use random_player for start of the game when you see search time is too long"""
 
-    if( game.timer < 0):
+    if game.timer < 0:
         game.d = -1
         return alpha_beta(game, state)
 
@@ -173,7 +209,6 @@ def alpha_beta_player(game, state):
     end = start + game.timer
     """use the above timer to implement iterative deepening using alpha_beta_cutoff() version"""
     move = None
-    print("Your code goes here -10pt")
 
     print("iterative deepening to depth: ", game.d)
     return move
@@ -185,7 +220,7 @@ def minmax_player(game, state):
     """Use a method to speed up at the start to avoid search down a long tree with not much outcome.
     Hint:for speedup use random_player for start of the game when you see search time is too long"""
 
-    if( game.timer < 0):
+    if (game.timer < 0):
         game.d = -1
         return minmax(game, state)
 
@@ -249,6 +284,7 @@ class Game:
                     self.display(state)
                     return self.utility(state, self.to_move(self.initial))
 
+
 class TicTacToe(Game):
     """Play TicTacToe on an h x v board, with Max (first player) playing 'X'.
     A state has the player to_move, a cached utility, a list of moves in
@@ -262,9 +298,9 @@ class TicTacToe(Game):
             self.k = size
         else:
             self.k = k
-        self.d = -1 # d is cutoff depth. Default is -1 meaning no depth limit. It is controlled usually by timer
-        self.maxDepth = size * size # max depth possible is width X height of the board
-        self.timer = t #timer  in seconds for opponent's search time limit. -1 means unlimited
+        self.d = -1  # d is cutoff depth. Default is -1 meaning no depth limit. It is controlled usually by timer
+        self.maxDepth = size * size  # max depth possible is width X height of the board
+        self.timer = t  #timer  in seconds for opponent's search time limit. -1 means unlimited
         moves = [(x, y) for x in range(1, size + 1)
                  for y in range(1, size + 1)]
         self.initial = GameState(to_move='X', move=None, utility=0, board={}, moves=moves)
@@ -280,7 +316,7 @@ class TicTacToe(Game):
 
     @staticmethod
     def switchPlayer(player):
-        assert(player == 'X' or player == 'O')
+        assert (player == 'X' or player == 'O')
         return 'O' if player == 'X' else 'X'
 
     def result(self, state, move):
@@ -322,7 +358,7 @@ class TicTacToe(Game):
             return self.k if player == 'X' else -self.k
         else:
             return 0
-        
+
     # evaluation function, version 1
     def eval1(self, state):
         """design and implement evaluation function for state.
@@ -330,10 +366,11 @@ class TicTacToe(Game):
             : 2- expand it for all k matches
             : 3- include double matches where one move can generate 2 matches.
             """
-        
+
         """ computes number of (k-1) completed matches. This means number of row or columns or diagonals 
         which include player position and in which k-1 spots are occuppied by player.
         """
+
         def possiblekComplete(move, board, player, k):
             """if move can complete a line of count items, return 1 for 'X' player and -1 for 'O' player"""
             match = self.k_in_row(board, move, player, (0, 1), k)
@@ -350,8 +387,6 @@ class TicTacToe(Game):
 
         return 0
 
-
-
     #@staticmethod
     def k_in_row(self, board, pos, player, dir, k):
         """Return true if there is a line of k cells in direction dir including position pos on board for player."""
@@ -367,5 +402,3 @@ class TicTacToe(Game):
             x, y = x - delta_x, y - delta_y
         n -= 1  # Because we counted move itself twice
         return n >= k
-
-
