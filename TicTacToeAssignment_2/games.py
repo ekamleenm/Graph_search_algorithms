@@ -80,11 +80,10 @@ def minmax_cutoff(game, state):
         return v
 
     # Body of minmax_cutoff:
-    if player == 'X':
-        return max(game.actions(state), key=lambda a: min_value(game.result(state, a), game.d), default=None)
-    else:
-        return min(game.actions(state), key=lambda a: min_value(game.result(state, a), game.d), default=None)
-
+    best_action = max(game.actions(state), key=lambda a: min_value(game.result(state, a), game.d), default=None)
+    if best_action is None:
+        print("Error: No valid action found.")
+    return best_action
 
 # ______________________________________________________________________________
 
@@ -232,11 +231,9 @@ def alpha_beta_player(game, state):
 
 
 def minmax_player(game, state):
-    """uses minmax or minmax with cutoff depth, for AI player"""
+    """Uses MinMax or MinMax with cutoff depth, for AI player."""
     if len(state.board) <= 1:
-        return random_player(game, state)
-    """Use a method to speed up at the start to avoid search down a long tree with not much outcome.
-    Hint:for speedup use random_player for start of the game when you see search time is too long"""
+        return random.choice(game.actions(state))  # Use random move at the start for speedup
 
     if game.timer < 0:
         game.d = -1
@@ -244,25 +241,21 @@ def minmax_player(game, state):
 
     start = time.perf_counter()
     end = start + 5
-    """use the above timer to implement iterative deepening using minmax_cutoff() version"""
     move = None
     depth = 1
 
     print(f"Starting iterative deepening loop: start={start}, end={end}")
 
-    # Use iterative deepening with MinMax cutoff
-    print(type(time.perf_counter()))
     try:
         while time.perf_counter() < end:
             game.d = depth
-            print(f"Depth: {game.d}")
             move = minmax_cutoff(game, state)
             depth += 1
     except Exception as e:
-        print(f"Exception occurred: {e}")
+        print(f"☢️Exception occurred: {e}")
 
     print("Iterative deepening to depth: ", game.d)
-    return move
+    return move if move is not None else random.choice(game.actions(state))
 
 
 # ______________________________________________________________________________
@@ -414,34 +407,34 @@ class TicTacToe(Game):
         score_X = 0
         score_O = 0
         eval_score = 0
-
+        move = state.board
         # Iterate through all moves on the board
-        for move in state.moves:
-            if state.board.get(move) == 'X':
-                # Evaluate potential winning lines for 'X'
-                x_score = possiblekComplete(move, state.board, 'X', self.k)
-                score_X += x_score
 
-                # Evaluate potential near-winning lines for 'X'
-                x_score_k_minus_1 = possiblekComplete(move, state.board, 'X', self.k-1)
-                score_X += x_score_k_minus_1
+        if state.board.get(move) == 'X':
+            # Evaluate potential winning lines for 'X'
+            x_score = possiblekComplete(move, state.board, 'X', self.k)
+            score_X += x_score
 
-                # Check for immediate win for 'X'
-                immediate_win_score = self.compute_utility(state.board, move, 'X')
-                score_X += immediate_win_score
+            # Evaluate potential near-winning lines for 'X'
+            x_score_k_minus_1 = possiblekComplete(move, state.board, 'X', self.k - 1)
+            score_X += x_score_k_minus_1
 
-            elif state.board.get(move) == 'O':
-                # Evaluate potential winning lines for 'O'
-                o_score = possiblekComplete(move, state.board, 'O', self.k)
-                score_O += o_score
+            # Check for immediate win for 'X'
+            immediate_win_score = self.compute_utility(state.board, move, 'X')
+            score_X += immediate_win_score
 
-                # Evaluate potential near-winning lines for 'O'
-                o_score_k_minus_1 = possiblekComplete(move, state.board, 'O', self.k-1)
-                score_O += o_score_k_minus_1
+        elif state.board.get(move) == 'O':
+            # Evaluate potential winning lines for 'O'
+            o_score = possiblekComplete(move, state.board, 'O', self.k)
+            score_O += o_score
 
-                # Check for immediate win for 'O'
-                immediate_win_score = self.compute_utility(state.board, move, 'O')
-                score_O += immediate_win_score
+            # Evaluate potential near-winning lines for 'O'
+            o_score_k_minus_1 = possiblekComplete(move, state.board, 'O', self.k - 1)
+            score_O += o_score_k_minus_1
+
+            # Check for immediate win for 'O'
+            immediate_win_score = self.compute_utility(state.board, move, 'O')
+            score_O += immediate_win_score
 
             # Prioritize center control if applicable
             center = (1, 1)
@@ -451,7 +444,7 @@ class TicTacToe(Game):
                 score_O -= 3
 
             # Combine scores for the evaluation
-            eval_score = score_X + score_O
+            eval_score = score_X - score_O
             return eval_score
 
     #@staticmethod
