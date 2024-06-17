@@ -116,7 +116,7 @@ def alpha_beta(game, state):
     beta = np.inf
     best_action = None
 
-    if player == game.max_player:
+    if player == 'X':
         best_action = max(game.actions(state), key=lambda a: min_value(game.result(state, a), alpha, beta),
                           default=None)
     else:
@@ -133,7 +133,7 @@ def alpha_beta_cutoff(game, state):
 
     def max_value(state, alpha, beta, depth):
         if depth == 0 or game.terminal_test(state):
-            return game.eval(state)
+            return game.eval1(state)
         v = -np.inf
         for a in game.actions(state):
             v = max(v, min_value(game.result(state, a), alpha, beta, depth - 1))
@@ -144,7 +144,7 @@ def alpha_beta_cutoff(game, state):
 
     def min_value(state, alpha, beta, depth):
         if depth == 0 or game.terminal_test(state):
-            return game.eval(state)  # Use the evaluation function at cutoff depth
+            return game.eval1(state)
         v = np.inf
         for a in game.actions(state):
             v = min(v, max_value(game.result(state, a), alpha, beta, depth - 1))
@@ -159,7 +159,7 @@ def alpha_beta_cutoff(game, state):
     beta = np.inf
     best_action = None
 
-    if player == game.max_player:
+    if player == 'X':
         best_action = max(game.actions(state), key=lambda a: min_value(game.result(state, a), alpha, beta, 0),
                           default=None)
     else:
@@ -196,7 +196,7 @@ def random_player(game, state):
 
 def alpha_beta_player(game, state):
     """uses alphaBeta prunning with minmax, or with cutoff version, for AI player"""
-    if game.is_initial_stage():
+    if len(state.board) <= 1:
         return random_player(game, state)
     """Use a method to speed up at the start to avoid search down a long tree with not much outcome.
     Hint: for speedup use random_player for start of the game when you see search time is too long"""
@@ -209,6 +209,15 @@ def alpha_beta_player(game, state):
     end = start + game.timer
     """use the above timer to implement iterative deepening using alpha_beta_cutoff() version"""
     move = None
+    depth = 1
+
+    # Iterative deepening with alpha-beta cutoff
+    while time.perf_counter() < end:
+        game.d = depth
+        new_move = alpha_beta_cutoff(game, state)
+        if new_move is not None:
+            move = new_move
+        depth += 1
 
     print("iterative deepening to depth: ", game.d)
     return move
@@ -216,7 +225,8 @@ def alpha_beta_player(game, state):
 
 def minmax_player(game, state):
     """uses minmax or minmax with cutoff depth, for AI player"""
-    print("Your code goes here -3pt")
+    if len(state.board) <= 1:
+        return random_player(game, state)
     """Use a method to speed up at the start to avoid search down a long tree with not much outcome.
     Hint:for speedup use random_player for start of the game when you see search time is too long"""
 
@@ -228,7 +238,13 @@ def minmax_player(game, state):
     end = start + game.timer
     """use the above timer to implement iterative deepening using minmax_cutoff() version"""
     move = None
-    print("Your code goes here -10pt")
+    depth = 1
+
+    # Use iterative deepening with MinMax cutoff
+    while time.perf_counter() < end:
+        move = minmax_cutoff(game, state)
+        depth += 1
+        game.d = depth
 
     print("iterative deepening to depth: ", game.d)
     return move
@@ -359,33 +375,37 @@ class TicTacToe(Game):
         else:
             return 0
 
-    # evaluation function, version 1
     def eval1(self, state):
-        """design and implement evaluation function for state.
+        """Design and implement evaluation function for state.
         Some ideas: 1-use the number of k-1 matches for X and O For this you can use function possibleKComplete().
             : 2- expand it for all k matches
             : 3- include double matches where one move can generate 2 matches.
             """
 
-        """ computes number of (k-1) completed matches. This means number of row or columns or diagonals 
-        which include player position and in which k-1 spots are occuppied by player.
-        """
-
         def possiblekComplete(move, board, player, k):
-            """if move can complete a line of count items, return 1 for 'X' player and -1 for 'O' player"""
-            match = self.k_in_row(board, move, player, (0, 1), k)
-            match = match + self.k_in_row(board, move, player, (1, 0), k)
-            match = match + self.k_in_row(board, move, player, (1, -1), k)
-            match = match + self.k_in_row(board, move, player, (1, 1), k)
+            """If move can complete a line of count items, return 1 for 'X' player and -1 for 'O' player"""
+            match = 0
+            match += self.k_in_row(board, move, player, (0, 1), k)
+            match += self.k_in_row(board, move, player, (1, 0), k)
+            match += self.k_in_row(board, move, player, (1, -1), k)
+            match += self.k_in_row(board, move, player, (1, 1), k)
             return match
 
-        # Maybe to accelerate, return 0 if number of pieces on board is less than half of board size:
-        #if len(state.moves) <= self.k / 2:
-        #    return 0
+        # Initialize scores
+        score_X = 0
+        score_O = 0
 
-        print("Your code goes here 15pt.")
+        # Evaluate board
+        for move in state.moves:
+            if state.board.get(move) == 'X':
+                score_X += possiblekComplete(move, state.board, 'X', self.k)
+            elif state.board.get(move) == 'O':
+                score_O += possiblekComplete(move, state.board, 'O', self.k)
 
-        return 0
+        # Combine scores for the evaluation
+        eval_score = score_X - score_O
+
+        return eval_score
 
     #@staticmethod
     def k_in_row(self, board, pos, player, dir, k):
