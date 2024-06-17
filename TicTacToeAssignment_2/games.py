@@ -64,7 +64,7 @@ def minmax_cutoff(game, state):
         if d == 0 or game.terminal_test(state):
             eval_value = game.eval1(state)
             if eval_value is None:
-                print(f"Error: eval1 returned None for state {state}")
+                print(f"❌Error: eval1 returned None for state {state}")
             return eval_value
         v = -np.inf
         for a in game.actions(state):
@@ -166,10 +166,10 @@ def alpha_beta_cutoff(game, state):
     best_action = None
 
     if player == 'X':
-        best_action = max(game.actions(state), key=lambda a: min_value(game.result(state, a), alpha, beta, 0),
+        best_action = max(game.actions(state), key=lambda a: min_value(game.result(state, a), alpha, beta, game.d),
                           default=None)
     else:
-        best_action = min(game.actions(state), key=lambda a: max_value(game.result(state, a), alpha, beta, 0),
+        best_action = min(game.actions(state), key=lambda a: max_value(game.result(state, a), alpha, beta, game.d),
                           default=None)
 
     return best_action
@@ -222,7 +222,7 @@ def alpha_beta_player(game, state):
         if remaining_time < 0.1:  # Stop if less than 0.1 seconds remaining
             break
         game.d = depth
-        new_move = alpha_beta_cutoff(game, state, depth)
+        new_move = alpha_beta_cutoff(game, state)
         if new_move is not None:
             move = new_move
         depth += 1
@@ -243,25 +243,25 @@ def minmax_player(game, state):
         return minmax(game, state)
 
     start = time.perf_counter()
-    end = start + game.timer
+    end = start + 5
     """use the above timer to implement iterative deepening using minmax_cutoff() version"""
     move = None
     depth = 1
 
-    print(f"Starting iterative deepening loop: start={start}, end={end}", flush=True)
+    print(f"Starting iterative deepening loop: start={start}, end={end}")
 
     # Use iterative deepening with MinMax cutoff
-    print(time.perf_counter())
+    print(type(time.perf_counter()))
     try:
         while time.perf_counter() < end:
             game.d = depth
-            print(f"Depth: {game.d}", flush=True)
+            print(f"Depth: {game.d}")
             move = minmax_cutoff(game, state)
             depth += 1
     except Exception as e:
-        print(f"Exception occurred: {e}", flush=True)
+        print(f"Exception occurred: {e}")
 
-    print("Iterative deepening to depth: ", game.d, flush=True)
+    print("Iterative deepening to depth: ", game.d)
     return move
 
 
@@ -406,18 +406,14 @@ class TicTacToe(Game):
             match += self.k_in_row(board, move, player, (1, 1), k)
             return match
 
-        def possiblekMinus1Complete(move, board, player, k):
-            """If move can complete a line of k-1 items, return the count of such lines."""
-            match = 0
-            match += self.k_in_row(board, move, player, (0, 1), k - 1)
-            match += self.k_in_row(board, move, player, (1, 0), k - 1)
-            match += self.k_in_row(board, move, player, (1, -1), k - 1)
-            match += self.k_in_row(board, move, player, (1, 1), k - 1)
-            return match
+        # Maybe to accelerate, return 0 if number of pieces on board is less than half of board size:
+        # if len(state.moves) <= self.k / 2:
+        #    return 0
 
         # Initialize scores
         score_X = 0
         score_O = 0
+        eval_score = 0
 
         # Iterate through all moves on the board
         for move in state.moves:
@@ -427,7 +423,7 @@ class TicTacToe(Game):
                 score_X += x_score
 
                 # Evaluate potential near-winning lines for 'X'
-                x_score_k_minus_1 = possiblekMinus1Complete(move, state.board, 'X', self.k)
+                x_score_k_minus_1 = possiblekComplete(move, state.board, 'X', self.k-1)
                 score_X += x_score_k_minus_1
 
                 # Check for immediate win for 'X'
@@ -440,7 +436,7 @@ class TicTacToe(Game):
                 score_O += o_score
 
                 # Evaluate potential near-winning lines for 'O'
-                o_score_k_minus_1 = possiblekMinus1Complete(move, state.board, 'O', self.k)
+                o_score_k_minus_1 = possiblekComplete(move, state.board, 'O', self.k-1)
                 score_O += o_score_k_minus_1
 
                 # Check for immediate win for 'O'
@@ -456,10 +452,7 @@ class TicTacToe(Game):
 
             # Combine scores for the evaluation
             eval_score = score_X + score_O
-            if eval_score is None:
-                print(f"Error: Evaluation function returned None for state {state}")
-
-            return eval_score if eval_score is not None else 0.0
+            return eval_score
 
     #@staticmethod
     def k_in_row(self, board, pos, player, dir, k):
