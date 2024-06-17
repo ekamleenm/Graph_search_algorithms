@@ -64,7 +64,7 @@ def minmax_cutoff(game, state):
         if d == 0 or game.terminal_test(state):
             eval_value = game.eval1(state)
             if eval_value is None:
-                print(f"❌Error: eval1 returned None for state {state}")
+                print(f"Error: eval1 returned None for state {state}")
             return eval_value
         v = -np.inf
         for a in game.actions(state):
@@ -384,14 +384,12 @@ class TicTacToe(Game):
             return 0
 
     def eval1(self, state):
-        """Design and implement evaluation function for state.
-        Some ideas: 1-use the number of k-1 matches for X and O For this you can use function possibleKComplete().
-            : 2- expand it for all k matches
-            : 3- include double matches where one move can generate 2 matches.
-            """
+        """Evaluation function for the game state.
+        This function evaluates the state by considering immediate wins,
+        potential lines of length k and k-1, and center control."""
 
         def possiblekComplete(move, board, player, k):
-            """If move can complete a line of count items, return 1 for 'X' player and -1 for 'O' player"""
+            """Count the number of possible lines of length k."""
             match = 0
             match += self.k_in_row(board, move, player, (0, 1), k)
             match += self.k_in_row(board, move, player, (1, 0), k)
@@ -399,53 +397,50 @@ class TicTacToe(Game):
             match += self.k_in_row(board, move, player, (1, 1), k)
             return match
 
-        # Maybe to accelerate, return 0 if number of pieces on board is less than half of board size:
-        # if len(state.moves) <= self.k / 2:
-        #    return 0
-
         # Initialize scores
         score_X = 0
         score_O = 0
-        eval_score = 0
-        move = state.board
+
         # Iterate through all moves on the board
+        for move, player in state.board.items():
+            if player == 'X':
+                # Evaluate potential winning lines for 'X'
+                x_score = possiblekComplete(move, state.board, 'X', self.k)
+                score_X += x_score
 
-        if state.board.get(move) == 'X':
-            # Evaluate potential winning lines for 'X'
-            x_score = possiblekComplete(move, state.board, 'X', self.k)
-            score_X += x_score
+                # Evaluate potential near-winning lines for 'X'
+                x_score_k_minus_1 = possiblekComplete(move, state.board, 'X', self.k - 1)
+                score_X += x_score_k_minus_1
 
-            # Evaluate potential near-winning lines for 'X'
-            x_score_k_minus_1 = possiblekComplete(move, state.board, 'X', self.k - 1)
-            score_X += x_score_k_minus_1
+                # Check for immediate win for 'X'
+                immediate_win_score = self.compute_utility(state.board, move, 'X')
+                score_X += immediate_win_score
 
-            # Check for immediate win for 'X'
-            immediate_win_score = self.compute_utility(state.board, move, 'X')
-            score_X += immediate_win_score
+            elif player == 'O':
+                # Evaluate potential winning lines for 'O'
+                o_score = possiblekComplete(move, state.board, 'O', self.k)
+                score_O += o_score
 
-        elif state.board.get(move) == 'O':
-            # Evaluate potential winning lines for 'O'
-            o_score = possiblekComplete(move, state.board, 'O', self.k)
-            score_O += o_score
+                # Evaluate potential near-winning lines for 'O'
+                o_score_k_minus_1 = possiblekComplete(move, state.board, 'O', self.k - 1)
+                score_O += o_score_k_minus_1
 
-            # Evaluate potential near-winning lines for 'O'
-            o_score_k_minus_1 = possiblekComplete(move, state.board, 'O', self.k - 1)
-            score_O += o_score_k_minus_1
+                # Check for immediate win for 'O'
+                immediate_win_score = self.compute_utility(state.board, move, 'O')
+                score_O += immediate_win_score
 
-            # Check for immediate win for 'O'
-            immediate_win_score = self.compute_utility(state.board, move, 'O')
-            score_O += immediate_win_score
+        # Prioritize center control if applicable
+        center = (1, 1)
+        if state.board.get(center) == 'X':
+            score_X += 3
+        elif state.board.get(center) == 'O':
+            score_O -= 3  # Subtract points for opponent controlling the center
 
-            # Prioritize center control if applicable
-            center = (1, 1)
-            if state.board.get(center) == 'X':
-                score_X += 3
-            elif state.board.get(center) == 'O':
-                score_O -= 3
+        # Combine scores for the evaluation
+        eval_score = score_X - score_O
 
-            # Combine scores for the evaluation
-            eval_score = score_X - score_O
-            return eval_score
+        return eval_score if eval_score is not None else 0.0
+
 
     #@staticmethod
     def k_in_row(self, board, pos, player, dir, k):
