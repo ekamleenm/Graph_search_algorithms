@@ -45,39 +45,41 @@ class MCTS:  #Monte Carlo Tree Search implementation
         start = time.perf_counter()
         end = start + timelimit
         """Use timer above to apply iterative deepening"""
+        iteration_count = 0  # Debugging: Count iterations
         while time.perf_counter() < end:
             #count = 100  # use this and the next line for debugging. Just disable previous while and enable these 2 lines
             #while count >= 0:
             #count -= 1
-            # SELECT stage use selectNode()
-            print("Your code goes here -3pt")
-
-            # EXPAND stage
-            print("Your code goes here -2pt")
-
-            # SIMULATE stage using simuplateRandomPlay()
-            print("Your code goes here -3pt")
-
-            # BACKUP stage using backPropagation
-            print("Your code goes here -2pt")
-
+            iteration_count += 1  # Debugging
+            leaf = self.selectNode(self.root)
+            if not self.isTerminalState(leaf.state.utility, leaf.state.moves):
+                self.expandNode(leaf)
+                simulation_result = self.simulateRandomPlay(leaf)
+                self.backPropagation(leaf, simulation_result)
         winnerNode = self.root.getChildWithMaxScore()
         assert (winnerNode is not None)
+        print(f"Total iterations: {iteration_count}")  # Debugging
         return winnerNode.state.move
 
     """selection stage function. walks down the tree using findBestNodeWithUCT()"""
 
     def selectNode(self, nd):
         node = nd
-        print("Your code goes here -3pt")
+        while node.children:
+            node = self.findBestNodeWithUCT(node)
         return node
 
     def findBestNodeWithUCT(self, nd):
         """finds the child node with the highest UCT. Parse nd's children and use uctValue() to collect uct's for the
         children....."""
         childUCT = []
-        print("Your code goes here -2pt")
-        return None
+        for child in nd.children:
+            uct_value = self.uctValue(nd.visitCount, child.winScore, child.visitCount)
+        childUCT.append((child, uct_value))
+
+        # Find the child with the maximum UCT value
+        best_child = max(childUCT, key=lambda item: item[1])[0]
+        return best_child
 
     def uctValue(self, parentVisit, nodeScore, nodeVisit):
         """compute Upper Confidence Value for a node"""
@@ -105,14 +107,28 @@ class MCTS:  #Monte Carlo Tree Search implementation
 
         """now roll out a random play down to a terminating state. """
 
-        tempState = copy.deepcopy(nd.state)  # to be used in the following random playout
+        tempState = copy.deepcopy(nd.state)
         to_move = tempState.to_move
-        print("Your code goes heren -5pt")
 
-        return ('X' if winStatus > 0 else 'O' if winStatus < 0 else 'N')  # 'N' means tie
+        while not self.isTerminalState(tempState.utility, tempState.moves):
+            actions = self.game.actions(tempState)
+            if not actions:
+                break
+            move = random.choice(actions)
+            tempState = self.game.result(tempState, move)
+
+        winStatus = self.game.compute_utility(tempState.board, move, to_move)
+        return 'X' if winStatus > 0 else 'O' if winStatus < 0 else 'N'  # 'N' means tie
 
     def backPropagation(self, nd, winningPlayer):
         """propagate upword to update score and visit count from
         the current leaf node to the root node."""
         tempNode = nd
-        print("Your code goes here -5pt")
+        while tempNode is not None:
+            tempNode.visitCount += 1
+            if winningPlayer == tempNode.state.to_move:
+                tempNode.winScore += 1
+            elif winningPlayer != 'N':
+                tempNode.winScore -= 1
+            tempNode = tempNode.parent
+

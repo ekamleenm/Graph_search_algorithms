@@ -252,7 +252,7 @@ def minmax_player(game, state):
             move = minmax_cutoff(game, state)
             depth += 1
     except Exception as e:
-        print(f"☢️Exception occurred: {e}")
+        print(f"Exception occurred: {e}")
 
     print("Iterative deepening to depth: ", game.d)
     return move if move is not None else random.choice(game.actions(state))
