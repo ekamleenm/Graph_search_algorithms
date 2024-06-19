@@ -429,13 +429,6 @@ class TicTacToe(Game):
                 immediate_win_score = self.compute_utility(state.board, move, 'O')
                 score_O += immediate_win_score
 
-        # Prioritize center control if applicable
-        center = (1, 1)
-        if state.board.get(center) == 'X':
-            score_X += 3
-        elif state.board.get(center) == 'O':
-            score_O -= 3  # Subtract points for opponent controlling the center
-
         # Combine scores for the evaluation
         eval_score = score_X - score_O
 

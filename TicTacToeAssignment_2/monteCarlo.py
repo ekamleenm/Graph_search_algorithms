@@ -50,7 +50,6 @@ class MCTS:  #Monte Carlo Tree Search implementation
             #count = 100  # use this and the next line for debugging. Just disable previous while and enable these 2 lines
             #while count >= 0:
             #count -= 1
-            iteration_count += 1  # Debugging
             leaf = self.selectNode(self.root)
             if not self.isTerminalState(leaf.state.utility, leaf.state.moves):
                 self.expandNode(leaf)
@@ -58,7 +57,6 @@ class MCTS:  #Monte Carlo Tree Search implementation
                 self.backPropagation(leaf, simulation_result)
         winnerNode = self.root.getChildWithMaxScore()
         assert (winnerNode is not None)
-        print(f"Total iterations: {iteration_count}")  # Debugging
         return winnerNode.state.move
 
     """selection stage function. walks down the tree using findBestNodeWithUCT()"""
@@ -77,7 +75,7 @@ class MCTS:  #Monte Carlo Tree Search implementation
             uct_value = self.uctValue(nd.visitCount, child.winScore, child.visitCount)
         childUCT.append((child, uct_value))
 
-        # Find the child with the maximum UCT value
+        # child with the maximum UCT value
         best_child = max(childUCT, key=lambda item: item[1])[0]
         return best_child
 
