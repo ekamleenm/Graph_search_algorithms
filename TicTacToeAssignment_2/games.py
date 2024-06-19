@@ -80,11 +80,7 @@ def minmax_cutoff(game, state):
         return v
 
     # Body of minmax_cutoff:
-    best_action = max(game.actions(state), key=lambda a: min_value(game.result(state, a), game.d), default=None)
-    if best_action is None:
-        print("Error: No valid action found.")
-    return best_action
-
+    return max(game.actions(state), key=lambda a: min_value(game.result(state, a), 0), default=None)
 
 # ______________________________________________________________________________
 
@@ -125,12 +121,21 @@ def alpha_beta(game, state):
     best_action = None
 
     if player == 'X':
-        best_action = max(game.actions(state), key=lambda a: min_value(game.result(state, a), alpha, beta),
-                          default=None)
+        best_score = -np.inf
+        for a in game.actions(state):
+            v = min_value(game.result(state, a), alpha, beta)
+            if v > best_score:
+                best_score = v
+                best_action = a
+            alpha = max(alpha, best_score)
     else:
-        best_action = min(game.actions(state), key=lambda a: max_value(game.result(state, a), alpha, beta),
-                          default=None)
-
+        best_score = np.inf
+        for a in game.actions(state):
+            v = max_value(game.result(state, a), alpha, beta)
+            if v < best_score:
+                best_score = v
+                best_action = a
+            beta = min(beta, best_score)
     return best_action
 
 
@@ -405,21 +410,14 @@ class TicTacToe(Game):
         def possiblekComplete(move, board, player, k):
             """if move can complete a line of count items, return 1 for 'X' player and -1 for 'O' player"""
             match = self.k_in_row(board, move, player, (0, 1), k)
-            print("mathc is :", match)
             match = match + self.k_in_row(board, move, player, (1, 0), k)
-            print("mathc is :", match)
             match = match + self.k_in_row(board, move, player, (1, -1), k)
             match = match + self.k_in_row(board, move, player, (1, 1), k)
-            print("final mathc is :", match)
             return match
 
         # Initialize scores
         score_O = 0  # AI Player
-        score_X = 0  # Opponent
-
-        # Debug: Print the current board state
-        print("Current board state:", state.board)
-
+        score_X = 0
         # Iterate through all moves on the board
         for move, player in state.board.items():
             print(f"Evaluating move {move} for player {player}")
@@ -433,9 +431,6 @@ class TicTacToe(Game):
                 score_O += o_lines_k_minus_1
                 score_O += 3 * o_immediate_win
 
-                # Debugging information
-                print(f"O move {move}: k={o_lines_k}, k-1={o_lines_k_minus_1}, immediate_win={o_immediate_win}")
-
             elif player == 'X':
                 # Evaluate potential winning lines for 'X'
                 x_lines_k = possiblekComplete(move, state.board, 'X', self.k)
@@ -446,14 +441,8 @@ class TicTacToe(Game):
                 score_X += x_lines_k_minus_1
                 score_X += 3 * x_immediate_win
 
-                # Debugging information
-                print(f"X move {move}: k={x_lines_k}, k-1={x_lines_k_minus_1}, immediate_win={x_immediate_win}")
-
         # Combine scores for the evaluation
         eval_score = score_O + score_X
-
-        # Debugging information
-        print(f"Evaluation score: {eval_score}")
         return eval_score if eval_score is not None else 0.0
 
     #@staticmethod
