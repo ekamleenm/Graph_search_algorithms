@@ -85,6 +85,7 @@ def minmax_cutoff(game, state):
         print("Error: No valid action found.")
     return best_action
 
+
 # ______________________________________________________________________________
 
 
@@ -100,6 +101,7 @@ def alpha_beta(game, state):
         v = -np.inf
         for a in game.actions(state):
             v = max(v, min_value(game.result(state, a), alpha, beta))
+            # with each traversal of the child, check whether the adjacent child can be pruned
             if v >= beta:
                 return v
             alpha = max(alpha, v)
@@ -111,6 +113,7 @@ def alpha_beta(game, state):
         v = np.inf
         for a in game.actions(state):
             v = min(v, max_value(game.result(state, a), alpha, beta))
+            # with each traversal of the child, check whether the adjacent child can be pruned
             if v <= alpha:
                 return v
             beta = min(beta, v)
@@ -162,16 +165,13 @@ def alpha_beta_cutoff(game, state):
     # The default test cuts off at depth d or at a terminal state
     alpha = -np.inf
     beta = np.inf
-    best_action = None
 
     if player == 'X':
-        best_action = max(game.actions(state), key=lambda a: min_value(game.result(state, a), alpha, beta, game.d),
-                          default=None)
+        return max(game.actions(state), key=lambda a: min_value(game.result(state, a), alpha, beta, game.d),
+                   default=None)
     else:
-        best_action = min(game.actions(state), key=lambda a: max_value(game.result(state, a), alpha, beta, game.d),
-                          default=None)
-
-    return best_action
+        return min(game.actions(state), key=lambda a: max_value(game.result(state, a), alpha, beta, game.d),
+                   default=None)
 
 
 # ______________________________________________________________________________
@@ -433,7 +433,6 @@ class TicTacToe(Game):
         eval_score = score_X - score_O
 
         return eval_score if eval_score is not None else 0.0
-
 
     #@staticmethod
     def k_in_row(self, board, pos, player, dir, k):
