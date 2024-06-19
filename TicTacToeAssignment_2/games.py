@@ -161,17 +161,29 @@ def alpha_beta_cutoff(game, state):
             beta = min(beta, v)
         return v
 
-    # Body of alpha_beta_cutoff_search starts here:
-    # The default test cuts off at depth d or at a terminal state
+    # Initial call:
     alpha = -np.inf
     beta = np.inf
+    best_move = None
 
     if player == 'X':
-        return max(game.actions(state), key=lambda a: min_value(game.result(state, a), alpha, beta, game.d),
-                   default=None)
+        best_score = -np.inf
+        for a in game.actions(state):
+            v = min_value(game.result(state, a), alpha, beta, game.d)
+            if v > best_score:
+                best_score = v
+                best_move = a
+            alpha = max(alpha, best_score)
+        return best_move
     else:
-        return min(game.actions(state), key=lambda a: max_value(game.result(state, a), alpha, beta, game.d),
-                   default=None)
+        best_score = np.inf
+        for a in game.actions(state):
+            v = max_value(game.result(state, a), alpha, beta, game.d)
+            if v < best_score:
+                best_score = v
+                best_move = a
+            beta = min(beta, best_score)
+        return best_move
 
 
 # ______________________________________________________________________________
@@ -387,51 +399,61 @@ class TicTacToe(Game):
         """Evaluation function for the game state.
         This function evaluates the state by considering immediate wins,
         potential lines of length k and k-1, and center control."""
+        # Debug: Print the function call
+        print("eval1 called")
 
         def possiblekComplete(move, board, player, k):
-            """Count the number of possible lines of length k."""
-            match = 0
-            match += self.k_in_row(board, move, player, (0, 1), k)
-            match += self.k_in_row(board, move, player, (1, 0), k)
-            match += self.k_in_row(board, move, player, (1, -1), k)
-            match += self.k_in_row(board, move, player, (1, 1), k)
+            """if move can complete a line of count items, return 1 for 'X' player and -1 for 'O' player"""
+            match = self.k_in_row(board, move, player, (0, 1), k)
+            print("mathc is :", match)
+            match = match + self.k_in_row(board, move, player, (1, 0), k)
+            print("mathc is :", match)
+            match = match + self.k_in_row(board, move, player, (1, -1), k)
+            match = match + self.k_in_row(board, move, player, (1, 1), k)
+            print("final mathc is :", match)
             return match
 
         # Initialize scores
-        score_X = 0
-        score_O = 0
+        score_O = 0  # AI Player
+        score_X = 0  # Opponent
+
+        # Debug: Print the current board state
+        print("Current board state:", state.board)
 
         # Iterate through all moves on the board
         for move, player in state.board.items():
-            if player == 'X':
-                # Evaluate potential winning lines for 'X'
-                x_score = possiblekComplete(move, state.board, 'X', self.k)
-                score_X += x_score
-
-                # Evaluate potential near-winning lines for 'X'
-                x_score_k_minus_1 = possiblekComplete(move, state.board, 'X', self.k - 1)
-                score_X += x_score_k_minus_1
-
-                # Check for immediate win for 'X'
-                immediate_win_score = self.compute_utility(state.board, move, 'X')
-                score_X += immediate_win_score
-
-            elif player == 'O':
+            print(f"Evaluating move {move} for player {player}")
+            if player == 'O':
                 # Evaluate potential winning lines for 'O'
-                o_score = possiblekComplete(move, state.board, 'O', self.k)
-                score_O += o_score
+                o_lines_k = possiblekComplete(move, state.board, 'O', self.k)
+                o_lines_k_minus_1 = possiblekComplete(move, state.board, 'O', self.k - 1)
+                o_immediate_win = self.compute_utility(state.board, move, 'O')
 
-                # Evaluate potential near-winning lines for 'O'
-                o_score_k_minus_1 = possiblekComplete(move, state.board, 'O', self.k - 1)
-                score_O += o_score_k_minus_1
+                score_O += o_lines_k
+                score_O += o_lines_k_minus_1
+                score_O += 3 * o_immediate_win
 
-                # Check for immediate win for 'O'
-                immediate_win_score = self.compute_utility(state.board, move, 'O')
-                score_O += immediate_win_score
+                # Debugging information
+                print(f"O move {move}: k={o_lines_k}, k-1={o_lines_k_minus_1}, immediate_win={o_immediate_win}")
+
+            elif player == 'X':
+                # Evaluate potential winning lines for 'X'
+                x_lines_k = possiblekComplete(move, state.board, 'X', self.k)
+                x_lines_k_minus_1 = possiblekComplete(move, state.board, 'X', self.k - 1)
+                x_immediate_win = self.compute_utility(state.board, move, 'X')
+
+                score_X += x_lines_k
+                score_X += x_lines_k_minus_1
+                score_X += 3 * x_immediate_win
+
+                # Debugging information
+                print(f"X move {move}: k={x_lines_k}, k-1={x_lines_k_minus_1}, immediate_win={x_immediate_win}")
 
         # Combine scores for the evaluation
-        eval_score = score_X - score_O
+        eval_score = score_O + score_X
 
+        # Debugging information
+        print(f"Evaluation score: {eval_score}")
         return eval_score if eval_score is not None else 0.0
 
     #@staticmethod
