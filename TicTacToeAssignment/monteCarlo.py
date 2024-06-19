@@ -118,7 +118,7 @@ class MCTS:  #Monte Carlo Tree Search implementation
 
         tempState = copy.deepcopy(nd.state)  # to be used in the following random playout
         to_move = tempState.to_move
-        print("Your code goes heren -5pt")
+        print("Your code goes here -5pt")
         while not self.isTerminalState(tempState.utility, tempState.moves):
             actions = self.game.actions(tempState)
             if not actions:

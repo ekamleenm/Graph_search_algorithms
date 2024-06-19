@@ -8,7 +8,8 @@ import time
 
 GameState = namedtuple('GameState', 'to_move, move, utility, board, moves')
 
-def gen_state(move = '(1, 1)', to_move='X', x_positions=[], o_positions=[], h=3, v=3):
+
+def gen_state(move='(1, 1)', to_move='X', x_positions=[], o_positions=[], h=3, v=3):
     """
         move = the move that has lead to this state,
         to_move=Whose turn is to move
@@ -78,9 +79,16 @@ def minmax_cutoff(game, state):
             v = min(v, max_value(game.result(state, a), d - 1))
         return v
 
-
     # Body of minmax_cutoff:
-    return max(game.actions(state), key=lambda a: min_value(game.result(state, a), 0), default=None)
+    best_score = -np.inf
+    best_action = None
+    for a in game.actions(state):
+        v = max_value(game.result(state, a), depth)
+        if v > best_score:
+            best_score = v
+            best_action = a
+    return best_action
+
 
 # ______________________________________________________________________________
 
@@ -94,7 +102,7 @@ def alpha_beta(game, state):
     def max_value(state, alpha, beta):
         print("Your code goes here -2pt")
         if game.terminal_test(state):
-            return game.utility(state, player)
+            return game.eval1(state)
         v = -np.inf
         for a in game.actions(state):
             v = max(v, min_value(game.result(state, a), alpha, beta))
@@ -106,7 +114,7 @@ def alpha_beta(game, state):
 
     def min_value(state, alpha, beta):
         if game.terminal_test(state):
-            return game.utility(state, player)
+            return game.eval1(state)
         print("Your code goes here -2pt")
         v = np.inf
         for a in game.actions(state):
@@ -207,7 +215,7 @@ def alpha_beta_player(game, state):
     """Use a method to speed up at the start to avoid search down a long tree with not much outcome.
     Hint: for speedup use random_player for start of the game when you see search time is too long"""
 
-    if( game.timer < 0):
+    if (game.timer < 0):
         game.d = -1
         return alpha_beta(game, state)
 
@@ -239,7 +247,7 @@ def minmax_player(game, state):
     """Use a method to speed up at the start to avoid search down a long tree with not much outcome.
     Hint:for speedup use random_player for start of the game when you see search time is too long"""
 
-    if( game.timer < 0):
+    if (game.timer < 0):
         game.d = -1
         return minmax(game, state)
 
@@ -309,6 +317,7 @@ class Game:
                     self.display(state)
                     return self.utility(state, self.to_move(self.initial))
 
+
 class TicTacToe(Game):
     """Play TicTacToe on an h x v board, with Max (first player) playing 'X'.
     A state has the player to_move, a cached utility, a list of moves in
@@ -322,9 +331,9 @@ class TicTacToe(Game):
             self.k = size
         else:
             self.k = k
-        self.d = -1 # d is cutoff depth. Default is -1 meaning no depth limit. It is controlled usually by timer
-        self.maxDepth = size * size # max depth possible is width X height of the board
-        self.timer = t #timer  in seconds for opponent's search time limit. -1 means unlimited
+        self.d = -1  # d is cutoff depth. Default is -1 meaning no depth limit. It is controlled usually by timer
+        self.maxDepth = size * size  # max depth possible is width X height of the board
+        self.timer = t  #timer  in seconds for opponent's search time limit. -1 means unlimited
         moves = [(x, y) for x in range(1, size + 1)
                  for y in range(1, size + 1)]
         self.initial = GameState(to_move='X', move=None, utility=0, board={}, moves=moves)
@@ -340,7 +349,7 @@ class TicTacToe(Game):
 
     @staticmethod
     def switchPlayer(player):
-        assert(player == 'X' or player == 'O')
+        assert (player == 'X' or player == 'O')
         return 'O' if player == 'X' else 'X'
 
     def result(self, state, move):
@@ -382,7 +391,7 @@ class TicTacToe(Game):
             return self.k if player == 'X' else -self.k
         else:
             return 0
-        
+
     # evaluation function, version 1
     def eval1(self, state):
         """design and implement evaluation function for state.
@@ -390,10 +399,11 @@ class TicTacToe(Game):
             : 2- expand it for all k matches
             : 3- include double matches where one move can generate 2 matches.
             """
-        
+
         """ computes number of (k-1) completed matches. This means number of row or columns or diagonals 
         which include player position and in which k-1 spots are occuppied by player.
         """
+
         def possiblekComplete(move, board, player, k):
             """if move can complete a line of count items, return 1 for 'X' player and -1 for 'O' player"""
             match = self.k_in_row(board, move, player, (0, 1), k)
@@ -408,10 +418,11 @@ class TicTacToe(Game):
 
         print("Your code goes here 15pt.")
         # Initialize scores
-        score_O = 0  # AI Player
-        score_X = 0
+        score_O = 0  # game Player
+        score_X = 0  # human player
         # Iterate through all moves on the board
-        for move, player in state.board.items():
+        for move in state.moves:
+            player = self.to_move(state)
             print(f"Evaluating move {move} for player {player}")
             if player == 'O':
                 # Evaluate potential winning lines for 'O'
@@ -426,21 +437,19 @@ class TicTacToe(Game):
 
             elif player == 'X':
                 # Evaluate potential winning lines for 'X'
-                x_lines_k = possiblekComplete(move, state.board, 'X', self.k)
-                o_lines_k_minus_1 = (possiblekComplete(move, state.board, 'O', self.k - 1))
+                x_lines_k = 2 * possiblekComplete(move, state.board, 'X', self.k)
+                x_lines_k_minus_1 = (possiblekComplete(move, state.board, 'O', self.k - 1))
                 x_immediate_win = self.compute_utility(state.board, move, 'X')
 
                 score_X += x_lines_k
-                score_O += 1.5*o_lines_k_minus_1
-                score_X += 3 * x_immediate_win
+                score_X += x_lines_k_minus_1
+                score_X += x_immediate_win
                 print(score_X)
 
         # Combine scores for the evaluation
         eval_score = score_O - score_X
         print("eval: ", eval_score)
         return eval_score
-
-
 
     #@staticmethod
     def k_in_row(self, board, pos, player, dir, k):
@@ -457,5 +466,3 @@ class TicTacToe(Game):
             x, y = x - delta_x, y - delta_y
         n -= 1  # Because we counted move itself twice
         return n >= k
-
-
