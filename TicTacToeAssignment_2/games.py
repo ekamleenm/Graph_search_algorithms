@@ -80,7 +80,8 @@ def minmax_cutoff(game, state):
         return v
 
     # Body of minmax_cutoff:
-    return max(game.actions(state), key=lambda a: min_value(game.result(state, a), 0), default=None)
+    return max(game.actions(state), key=lambda a: min_value(game.result(state, a), game.d), default=None)
+
 
 # ______________________________________________________________________________
 
@@ -120,22 +121,14 @@ def alpha_beta(game, state):
     beta = np.inf
     best_action = None
 
-    if player == 'X':
-        best_score = -np.inf
-        for a in game.actions(state):
-            v = min_value(game.result(state, a), alpha, beta)
-            if v > best_score:
-                best_score = v
-                best_action = a
-            alpha = max(alpha, best_score)
-    else:
-        best_score = np.inf
-        for a in game.actions(state):
-            v = max_value(game.result(state, a), alpha, beta)
-            if v < best_score:
-                best_score = v
-                best_action = a
-            beta = min(beta, best_score)
+    best_score = -np.inf
+    for a in game.actions(state):
+        v = max_value(game.result(state, a), alpha, beta)
+        if v > best_score:
+            best_score = v
+            best_action = a
+        alpha = max(alpha, best_score)
+
     return best_action
 
 
@@ -166,29 +159,19 @@ def alpha_beta_cutoff(game, state):
             beta = min(beta, v)
         return v
 
-    # Initial call:
     alpha = -np.inf
     beta = np.inf
     best_move = None
 
-    if player == 'X':
-        best_score = -np.inf
-        for a in game.actions(state):
-            v = min_value(game.result(state, a), alpha, beta, game.d)
-            if v > best_score:
-                best_score = v
-                best_move = a
-            alpha = max(alpha, best_score)
-        return best_move
-    else:
-        best_score = np.inf
-        for a in game.actions(state):
-            v = max_value(game.result(state, a), alpha, beta, game.d)
-            if v < best_score:
-                best_score = v
-                best_move = a
-            beta = min(beta, best_score)
-        return best_move
+    best_score = -np.inf
+    for a in game.actions(state):
+        v = max_value(game.result(state, a), alpha, beta, game.d)
+        if v > best_score:
+            best_score = v
+            best_move = a
+        alpha = max(alpha, best_score)
+
+    return best_move
 
 
 # ______________________________________________________________________________
@@ -257,22 +240,17 @@ def minmax_player(game, state):
         return minmax(game, state)
 
     start = time.perf_counter()
-    end = start + 5
+    end = start + game.timer
     move = None
     depth = 1
 
-    print(f"Starting iterative deepening loop: start={start}, end={end}")
-
-    try:
-        while time.perf_counter() < end:
-            game.d = depth
-            move = minmax_cutoff(game, state)
-            depth += 1
-    except Exception as e:
-        print(f"Exception occurred: {e}")
+    while time.perf_counter() < end:
+        game.d = depth
+        move = minmax_cutoff(game, state)
+        depth += 1
 
     print("Iterative deepening to depth: ", game.d)
-    return move if move is not None else random.choice(game.actions(state))
+    return move
 
 
 # ______________________________________________________________________________
@@ -424,25 +402,28 @@ class TicTacToe(Game):
             if player == 'O':
                 # Evaluate potential winning lines for 'O'
                 o_lines_k = possiblekComplete(move, state.board, 'O', self.k)
-                o_lines_k_minus_1 = possiblekComplete(move, state.board, 'O', self.k - 1)
+                o_lines_k_minus_1 = (possiblekComplete(move, state.board, 'O', self.k - 1))
                 o_immediate_win = self.compute_utility(state.board, move, 'O')
 
                 score_O += o_lines_k
                 score_O += o_lines_k_minus_1
-                score_O += 3 * o_immediate_win
+                score_O += o_immediate_win
+                print(score_O)
 
             elif player == 'X':
                 # Evaluate potential winning lines for 'X'
                 x_lines_k = possiblekComplete(move, state.board, 'X', self.k)
-                x_lines_k_minus_1 = possiblekComplete(move, state.board, 'X', self.k - 1)
+                o_lines_k_minus_1 = (possiblekComplete(move, state.board, 'O', self.k - 1))
                 x_immediate_win = self.compute_utility(state.board, move, 'X')
 
                 score_X += x_lines_k
-                score_X += x_lines_k_minus_1
+                score_O += 1.5*o_lines_k_minus_1
                 score_X += 3 * x_immediate_win
+                print(score_X)
 
         # Combine scores for the evaluation
-        eval_score = score_O + score_X
+        eval_score = score_O - score_X
+        print("eval: ", eval_score)
         return eval_score if eval_score is not None else 0.0
 
     #@staticmethod
