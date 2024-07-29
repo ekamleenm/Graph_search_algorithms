@@ -38,7 +38,8 @@ class MCTS:  #Monte Carlo Tree Search implementation
         self.exploreFactor = math.sqrt(2)
 
     def isTerminalState(self, utility, moves):
-        return utility != 0 or len(moves) == 0
+        print(f"Checking terminal state: utility={utility}, moves={moves}")  # Debugging statement
+        return
 
     def monteCarloPlayer(self, timelimit=4):
         """Entry point for Monte Carlo search"""
@@ -46,26 +47,28 @@ class MCTS:  #Monte Carlo Tree Search implementation
         end = start + timelimit
         """Use timer above to apply iterative deepening"""
         while time.perf_counter() < end:
-            #count = 100  # use this and the next line for debugging. Just disable previous while and enable these 2 lines
-            #while count >= 0:
-            #count -= 1
-            # SELECT stage use selectNode()
-            print("Your code goes here -3pt")
-            leaf = self.selectNode(self.root)
+            print("Starting iteration")  # Debugging statement
 
-            if not self.isTerminalState(leaf.state.utility, leaf.state.moves):
-                # EXPAND stage
-                print("Your code goes here -2pt")
-                self.expandNode(leaf)
-                # SIMULATE stage using simuplateRandomPlay()
-                print("Your code goes here -3pt")
-                simulation_result = self.simulateRandomPlay(leaf)
+            # SELECT stage use selectNode()
+            print("Selecting node")  # Debugging statement
+            leaf = self.selectNode(self.root)
+            self.expandNode(leaf)
+            if leaf.children:
+                new_leaf = random.choice(leaf.children)
+
+                # SIMULATE stage using simulateRandomPlay()
+                print("Simulating random play")  # Debugging statement
+                simulation_result = self.simulateRandomPlay(new_leaf)
+                print(f"Simulation result: {simulation_result}")  # Debugging statement
+
                 # BACKUP stage using backPropagation
-                print("Your code goes here -2pt")
-                self.backPropagation(leaf, simulation_result)
+                print("Backpropagating")  # Debugging statement
+                self.backPropagation(new_leaf, simulation_result)
 
         winnerNode = self.root.getChildWithMaxScore()
-        assert (winnerNode is not None)
+        assert winnerNode is not None
+        print(
+            f"Winner node with utility={winnerNode.state.utility}, moves={winnerNode.state.moves}")  # Debugging statement
         return winnerNode.state.move
 
     """selection stage function. walks down the tree using findBestNodeWithUCT()"""
@@ -84,7 +87,7 @@ class MCTS:  #Monte Carlo Tree Search implementation
         print("Your code goes here -2pt")
         for child in nd.children:
             uct_value = self.uctValue(nd.visitCount, child.winScore, child.visitCount)
-        childUCT.append((child, uct_value))
+            childUCT.append((child, uct_value))
 
         # child with the maximum UCT value
         best_child = max(childUCT, key=lambda item: item[1])[0]
@@ -99,13 +102,13 @@ class MCTS:  #Monte Carlo Tree Search implementation
     def expandNode(self, nd):
         """generate the child nodes and append them to nd's children"""
         stat = nd.state
-        tempState = GameState(to_move=stat.to_move, move=stat.move, utility=stat.utility, board=stat.board,
-                              moves=stat.moves)
+        tempState = GameState(to_move=stat.to_move, move=stat.move, utility=stat.utility, board=stat.board, moves=stat.moves)
         for a in self.game.actions(tempState):
             childNode = self.Node(self.game.result(tempState, a), nd)
             nd.children.append(childNode)
 
     def simulateRandomPlay(self, nd):
+        print("Starting simulateRandomPlay")  # Debugging statement
         # first check win possibility for the current node:
         winStatus = self.game.compute_utility(nd.state.board, nd.state.move, nd.state.board[nd.state.move])
         if winStatus == self.game.k:  #means it is opponent's win
@@ -118,15 +121,22 @@ class MCTS:  #Monte Carlo Tree Search implementation
 
         tempState = copy.deepcopy(nd.state)  # to be used in the following random playout
         to_move = tempState.to_move
-        print("Your code goes here -5pt")
+        move = None
         while not self.isTerminalState(tempState.utility, tempState.moves):
             actions = self.game.actions(tempState)
             if not actions:
                 break
             move = random.choice(actions)
             tempState = self.game.result(tempState, move)
+            print("Move made: ", move)
 
-        winStatus = self.game.compute_utility(tempState.board, move, to_move)
+        # Calculate utility after reaching a terminal state
+        if move is not None:
+            print("tempState.to_move: ", tempState.to_move)
+            print('move is : ', move)
+            winStatus = self.game.compute_utility(tempState.board, move, tempState.to_move)
+        else:
+            winStatus = 0  # Handle case when no move was possible
 
         return ('X' if winStatus > 0 else 'O' if winStatus < 0 else 'N')  # 'N' means tie
 
@@ -137,8 +147,9 @@ class MCTS:  #Monte Carlo Tree Search implementation
         print("Your code goes here -5pt")
         while tempNode is not None:
             tempNode.visitCount += 1
-            if winningPlayer == tempNode.state.to_move:
-                tempNode.winScore += 1
-            elif winningPlayer != 'N':
-                tempNode.winScore -= 1
+            if winningPlayer != 'N':
+                if winningPlayer == tempNode.state.to_move:
+                    tempNode.winScore += 1
+                else:
+                    tempNode.winScore -= 1
             tempNode = tempNode.parent

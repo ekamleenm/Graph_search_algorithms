@@ -80,14 +80,7 @@ def minmax_cutoff(game, state):
         return v
 
     # Body of minmax_cutoff:
-    best_score = -np.inf
-    best_action = None
-    for a in game.actions(state):
-        v = max_value(game.result(state, a), depth)
-        if v > best_score:
-            best_score = v
-            best_action = a
-    return best_action
+    return max(game.actions(state), key=lambda a: min_value(game.result(state, a), game.d), default=None)
 
 
 # ______________________________________________________________________________
