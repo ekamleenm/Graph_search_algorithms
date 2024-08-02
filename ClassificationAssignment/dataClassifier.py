@@ -46,13 +46,67 @@ def enhancedFeatureExtractorDigit(datum):
     for this datum (datum is of type samples.Datum).
 
     ## DESCRIBE YOUR ENHANCED FEATURES HERE...
-
+    1. Horizontal and vertical pixel transitions (changes from white to black or vice versa).
+    2. Ratio of width to height of the digit's active pixel region.
+    3. Total count of active (non-zero) pixels.
+    4. Distribution of active pixels: proportion above the midline and to the right of the centerline.
+    5. Presence of corners or intersections in the digit's structure.
     ##
     """
     features = basicFeatureExtractorDigit(datum)
 
     "*** YOUR CODE HERE to extract and add enhanced features to features list ***"
-    util.raiseNotDefined()
+    # Initialize feature variables
+    pixel_transitions = 0
+    pixels = datum.getPixels()
+    active_pixel_count = 0
+    first_active_left = None
+    active_above_midline = 0
+    active_right_midline = 0
+
+    # Horizontal analysis: Counting transitions and active pixels
+    for i in range(DIGIT_DATUM_HEIGHT):
+        for j in range(DIGIT_DATUM_WIDTH):
+            if pixels[i][j] > 0:
+                active_pixel_count += 1
+                if first_active_left is None or j < first_active_left:
+                    first_active_left = j
+                if i < DIGIT_DATUM_HEIGHT // 2:
+                    active_above_midline += 1
+                if j > DIGIT_DATUM_WIDTH // 2:
+                    active_right_midline += 1
+            if j > 0 and pixels[i][j] != pixels[i][j - 1]:
+                pixel_transitions += 1
+
+    # Vertical analysis: Counting transitions and calculating bounding box height
+    first_active_top = None
+    for j in range(DIGIT_DATUM_WIDTH):
+        for i in range(DIGIT_DATUM_HEIGHT):
+            if pixels[i][j] > 0:
+                if first_active_top is None or i < first_active_top:
+                    first_active_top = i
+            if i > 0 and pixels[i][j] != pixels[i - 1][j]:
+                pixel_transitions += 1
+
+    # Calculating bounding box dimensions
+    bounding_box_width = DIGIT_DATUM_WIDTH - (2 * first_active_left) if first_active_left else DIGIT_DATUM_WIDTH
+    bounding_box_height = DIGIT_DATUM_HEIGHT - (2 * first_active_top) if first_active_top else DIGIT_DATUM_HEIGHT
+    aspect_ratio = float(bounding_box_width) / bounding_box_height if bounding_box_height > 0 else 1.0
+
+    # Feature 1: Pixel transition count
+    features['pixel_transitions'] = pixel_transitions
+
+    # Feature 2: Aspect ratio
+    features['aspect_ratio'] = aspect_ratio
+
+    # Feature 3: Active pixel density (non-zero pixel count)
+    features['active_pixel_density'] = active_pixel_count / (DIGIT_DATUM_WIDTH * DIGIT_DATUM_HEIGHT)
+
+    # Feature 4: Proportion of active pixels above midline
+    features['above_midline_proportion'] = active_above_midline / active_pixel_count if active_pixel_count > 0 else 0.0
+
+    # Feature 5: Proportion of active pixels right of midline
+    features['right_midline_proportion'] = active_right_midline / active_pixel_count if active_pixel_count > 0 else 0.0
 
     return features
 
