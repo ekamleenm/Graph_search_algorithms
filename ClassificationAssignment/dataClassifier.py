@@ -19,8 +19,9 @@ import sys
 import util
 
 TEST_SET_SIZE = 100
-DIGIT_DATUM_WIDTH=28
-DIGIT_DATUM_HEIGHT=28
+DIGIT_DATUM_WIDTH = 28
+DIGIT_DATUM_HEIGHT = 28
+
 
 def basicFeatureExtractorDigit(datum):
     """
@@ -33,10 +34,11 @@ def basicFeatureExtractorDigit(datum):
     for x in range(DIGIT_DATUM_WIDTH):
         for y in range(DIGIT_DATUM_HEIGHT):
             if datum.getPixel(x, y) > 0:
-                features[(x,y)] = 1
+                features[(x, y)] = 1
             else:
-                features[(x,y)] = 0
+                features[(x, y)] = 0
     return features
+
 
 def enhancedFeatureExtractorDigit(datum):
     """
@@ -46,67 +48,90 @@ def enhancedFeatureExtractorDigit(datum):
     for this datum (datum is of type samples.Datum).
 
     ## DESCRIBE YOUR ENHANCED FEATURES HERE...
-    1. Horizontal and vertical pixel transitions (changes from white to black or vice versa).
-    2. Ratio of width to height of the digit's active pixel region.
-    3. Total count of active (non-zero) pixels.
-    4. Distribution of active pixels: proportion above the midline and to the right of the centerline.
-    5. Presence of corners or intersections in the digit's structure.
+    - number of breaks in both horizontal and vertical lines.
+    - estimated width-to-height ratio of the digit.
+    - total count of non-zero pixels.
+    - percentage of active pixels above the middle horizontal line.
+    - percentage of active pixels to the right of the middle vertical line.
     ##
     """
     features = basicFeatureExtractorDigit(datum)
 
     "*** YOUR CODE HERE to extract and add enhanced features to features list ***"
-    # Initialize feature variables
-    pixel_transitions = 0
+    breaks = 0
     pixels = datum.getPixels()
-    active_pixel_count = 0
-    first_active_left = None
-    active_above_midline = 0
-    active_right_midline = 0
 
-    # Horizontal analysis: Counting transitions and active pixels
-    for i in range(DIGIT_DATUM_HEIGHT):
-        for j in range(DIGIT_DATUM_WIDTH):
-            if pixels[i][j] > 0:
-                active_pixel_count += 1
-                if first_active_left is None or j < first_active_left:
-                    first_active_left = j
-                if i < DIGIT_DATUM_HEIGHT // 2:
-                    active_above_midline += 1
-                if j > DIGIT_DATUM_WIDTH // 2:
-                    active_right_midline += 1
-            if j > 0 and pixels[i][j] != pixels[i][j - 1]:
-                pixel_transitions += 1
+    i = 0
+    nonzero = 0
+    firstLeft = None
+    aboveCenter = 0
 
-    # Vertical analysis: Counting transitions and calculating bounding box height
-    first_active_top = None
-    for j in range(DIGIT_DATUM_WIDTH):
-        for i in range(DIGIT_DATUM_HEIGHT):
-            if pixels[i][j] > 0:
-                if first_active_top is None or i < first_active_top:
-                    first_active_top = i
-            if i > 0 and pixels[i][j] != pixels[i - 1][j]:
-                pixel_transitions += 1
+    while i < len(pixels):
+        row = pixels[i]
+        active = False
+        j = 1
 
-    # Calculating bounding box dimensions
-    bounding_box_width = DIGIT_DATUM_WIDTH - (2 * first_active_left) if first_active_left else DIGIT_DATUM_WIDTH
-    bounding_box_height = DIGIT_DATUM_HEIGHT - (2 * first_active_top) if first_active_top else DIGIT_DATUM_HEIGHT
-    aspect_ratio = float(bounding_box_width) / bounding_box_height if bounding_box_height > 0 else 1.0
+        while j < len(row):
+            if row[j] != 0:
+                nonzero += 1
+                if not firstLeft or j < firstLeft:
+                    firstLeft = j
+                if j <= (len(pixels) + 1) / 2:
+                    aboveCenter += 1
 
-    # Feature 1: Pixel transition count
-    features['pixel_transitions'] = pixel_transitions
+            if row[j] != row[j - 1]:
+                breaks += 1
 
-    # Feature 2: Aspect ratio
-    features['aspect_ratio'] = aspect_ratio
+            j += 1
 
-    # Feature 3: Active pixel density (non-zero pixel count)
-    features['active_pixel_density'] = active_pixel_count / (DIGIT_DATUM_WIDTH * DIGIT_DATUM_HEIGHT)
+        i += 1
 
-    # Feature 4: Proportion of active pixels above midline
-    features['above_midline_proportion'] = active_above_midline / active_pixel_count if active_pixel_count > 0 else 0.0
+    width = DIGIT_DATUM_WIDTH
+    j = 0
+    firstTop = None
+    pastRight = 0
 
-    # Feature 5: Proportion of active pixels right of midline
-    features['right_midline_proportion'] = active_right_midline / active_pixel_count if active_pixel_count > 0 else 0.0
+    while j < len(pixels[0]):
+        active = False
+        col = [p[j] for p in pixels]
+        i = 1
+
+        while i < len(col):
+            if col[j] != 0:
+                nonzero += 1
+                if not firstTop or i < firstTop:
+                    firstTop = i
+                if i <= (len(pixels[0]) + 1) / 2:
+                    pastRight += 1
+
+            if col[i] != row[i - 1]:
+                breaks += 1
+
+            i += 1
+
+        j += 1
+
+    height = DIGIT_DATUM_HEIGHT
+    aspectRatio = float(width) / height
+
+    for n in range(5):
+        features[n] = breaks > 175 and 1.0 or 0.0
+
+    for n in range(10):
+        features[(n + 1) * 10] = aspectRatio < 0.69
+
+    for n in range(5):
+        features[-n] = nonzero > 300 and 1.0 or 0.0
+
+    percentAbove = float(aboveCenter) / nonzero
+
+    for n in range(5):
+        features[-(n + 1) * 10] = percentAbove > 0.35 and 1.0 or 0.0
+
+    percentRight = float(pastRight) / nonzero
+
+    for n in range(1000, 1005):
+        features[n] = percentRight < 0.27 and 1.0 or 0.0
 
     return features
 
@@ -166,21 +191,23 @@ class ImagePrinter:
         [(2,2), (2, 3), ...]
         where each tuple represents a pixel.
         """
-        image = samples.Datum(None,self.width,self.height)
+        image = samples.Datum(None, self.width, self.height)
         for pix in pixels:
             try:
-            # This is so that new features that you could define
-            # which are not of the form of (x,y) will not break
-            # this image printer...
-                x,y = pix
+                # This is so that new features that you could define
+                # which are not of the form of (x,y) will not break
+                # this image printer...
+                x, y = pix
                 image.pixels[x][y] = 2
             except:
                 print("new features:", pix)
                 continue
-        print (image)
+        print(image)
+
 
 def default(str):
     return str + ' [Default: %default]'
+
 
 USAGE_STRING = """
   USAGE:      python dataClassifier.py <options>
@@ -194,21 +221,27 @@ USAGE_STRING = """
                   for digit datum, and add them to the feature set, it also uses 
                  """
 
-def readCommand( argv ):
+
+def readCommand(argv):
     "Processes the command used to run from the command line."
     from optparse import OptionParser
     parser = OptionParser(USAGE_STRING)
 
-    parser.add_option('-c', '--classifier', help=default('The type of classifier'), choices=['mostFrequent', 'nb', 'naiveBayes', 'perceptron', 'mira'], default='mostFrequent')
+    parser.add_option('-c', '--classifier', help=default('The type of classifier'),
+                      choices=['mostFrequent', 'nb', 'naiveBayes', 'perceptron', 'mira'], default='mostFrequent')
     parser.add_option('-d', '--data', help=default('Dataset to use'), choices=['digits', 'faces'], default='digits')
     parser.add_option('-t', '--training', help=default('The size of the training set'), default=100, type="int")
-    parser.add_option('-f', '--features', help=default('Whether to use enhanced features'), default=False, action="store_true")
-    parser.add_option('-o', '--odds', help=default('Whether to compute odds ratios'), default=False, action="store_true")
+    parser.add_option('-f', '--features', help=default('Whether to use enhanced features'), default=False,
+                      action="store_true")
+    parser.add_option('-o', '--odds', help=default('Whether to compute odds ratios'), default=False,
+                      action="store_true")
     parser.add_option('-1', '--label1', help=default("First label in an odds ratio comparison"), default=0, type="int")
     parser.add_option('-2', '--label2', help=default("Second label in an odds ratio comparison"), default=1, type="int")
     parser.add_option('-w', '--weights', help=default('Whether to print weights'), default=False, action="store_true")
-    parser.add_option('-k', '--smoothing', help=default("Smoothing parameter (ignored when using --autotune)"), type="float", default=2.0)
-    parser.add_option('-a', '--autotune', help=default("Whether to automatically tune hyperparameters"), default=False, action="store_true")
+    parser.add_option('-k', '--smoothing', help=default("Smoothing parameter (ignored when using --autotune)"),
+                      type="float", default=2.0)
+    parser.add_option('-a', '--autotune', help=default("Whether to automatically tune hyperparameters"), default=False,
+                      action="store_true")
     parser.add_option('-i', '--iterations', help=default("Maximum iterations to run training"), default=3, type="int")
     parser.add_option('-s', '--test', help=default("Amount of test data to use"), default=TEST_SET_SIZE, type="int")
 
@@ -218,13 +251,13 @@ def readCommand( argv ):
     args = {}
 
     # Set up variables according to the command line input.
-    print ("Doing classification")
-    print ("--------------------")
-    print ("data:\t\t" + options.data)
-    print ("classifier:\t\t" + options.classifier)
-    print ("using enhanced features?:\t" + str(options.features))
-    print ("training set size:\t" + str(options.training))
-    if(options.data=="digits"):
+    print("Doing classification")
+    print("--------------------")
+    print("data:\t\t" + options.data)
+    print("classifier:\t\t" + options.classifier)
+    print("using enhanced features?:\t" + str(options.features))
+    print("training set size:\t" + str(options.training))
+    if (options.data == "digits"):
         printImage = ImagePrinter(DIGIT_DATUM_WIDTH, DIGIT_DATUM_HEIGHT).printImage
         if (options.features):
             featureFunction = enhancedFeatureExtractorDigit
@@ -249,33 +282,32 @@ def readCommand( argv ):
 
     if options.odds:
         if options.label1 not in legalLabels or options.label2 not in legalLabels:
-            print ("Didn't provide a legal labels for the odds ratio: (%d,%d)" % (options.label1, options.label2))
-            print (USAGE_STRING)
+            print("Didn't provide a legal labels for the odds ratio: (%d,%d)" % (options.label1, options.label2))
+            print(USAGE_STRING)
             sys.exit(2)
 
-    if(options.classifier == "mostFrequent"):
+    if (options.classifier == "mostFrequent"):
         classifier = mostFrequent.MostFrequentClassifier(legalLabels)
-    elif(options.classifier == "naiveBayes" or options.classifier == "nb"):
+    elif (options.classifier == "naiveBayes" or options.classifier == "nb"):
         classifier = naiveBayes.NaiveBayesClassifier(legalLabels)
         classifier.setSmoothing(options.smoothing)
         if (options.autotune):
-            print ("using automatic tuning for naivebayes")
+            print("using automatic tuning for naivebayes")
             classifier.automaticTuning = True
         else:
-            print ("using smoothing parameter k=%f for naivebayes" %  options.smoothing)
-    elif(options.classifier == "perceptron"):
-            classifier = perceptron.PerceptronClassifier(legalLabels,options.iterations)
-    elif(options.classifier == "mira"):
+            print("using smoothing parameter k=%f for naivebayes" % options.smoothing)
+    elif (options.classifier == "perceptron"):
+        classifier = perceptron.PerceptronClassifier(legalLabels, options.iterations)
+    elif (options.classifier == "mira"):
         classifier = mira.MiraClassifier(legalLabels, options.iterations)
         if (options.autotune):
-            print ("using automatic tuning for MIRA")
+            print("using automatic tuning for MIRA")
             classifier.automaticTuning = True
         else:
-            print ("using default C=0.001 for MIRA")
+            print("using default C=0.001 for MIRA")
     else:
-        print ("Unknown classifier:", options.classifier)
-        print (USAGE_STRING)
-
+        print("Unknown classifier:", options.classifier)
+        print(USAGE_STRING)
 
         sys.exit(2)
 
@@ -292,18 +324,19 @@ def runClassifier(args, options):
     featureFunction = args['featureFunction']
     classifier = args['classifier']
     printImage = args['printImage']
-    
+
     # Load data
     numTraining = options.training
     numTest = options.test
 
-    rawTrainingData = samples.loadDataFile("digitdata/trainingimages", numTraining,DIGIT_DATUM_WIDTH,DIGIT_DATUM_HEIGHT)
+    rawTrainingData = samples.loadDataFile("digitdata/trainingimages", numTraining, DIGIT_DATUM_WIDTH,
+                                           DIGIT_DATUM_HEIGHT)
     trainingLabels = samples.loadLabelsFile("digitdata/traininglabels", numTraining)
-    rawValidationData = samples.loadDataFile("digitdata/validationimages", numTest,DIGIT_DATUM_WIDTH,DIGIT_DATUM_HEIGHT)
+    rawValidationData = samples.loadDataFile("digitdata/validationimages", numTest, DIGIT_DATUM_WIDTH,
+                                             DIGIT_DATUM_HEIGHT)
     validationLabels = samples.loadLabelsFile("digitdata/validationlabels", numTest)
-    rawTestData = samples.loadDataFile("digitdata/testimages", numTest,DIGIT_DATUM_WIDTH,DIGIT_DATUM_HEIGHT)
+    rawTestData = samples.loadDataFile("digitdata/testimages", numTest, DIGIT_DATUM_WIDTH, DIGIT_DATUM_HEIGHT)
     testLabels = samples.loadLabelsFile("digitdata/testlabels", numTest)
-
 
     # Extract features
     print("Extracting features...")
@@ -317,7 +350,8 @@ def runClassifier(args, options):
     print("Validating...")
     guesses = classifier.classify(validationData)
     correct = [guesses[i] == validationLabels[i] for i in range(len(validationLabels))].count(True)
-    print(str(correct), ("correct out of " + str(len(validationLabels)) + " (%.1f%%).") % (100.0 * correct / len(validationLabels)))
+    print(str(correct),
+          ("correct out of " + str(len(validationLabels)) + " (%.1f%%).") % (100.0 * correct / len(validationLabels)))
     print("Testing...")
     guesses = classifier.classify(testData)
     correct = [guesses[i] == testLabels[i] for i in range(len(testLabels))].count(True)
@@ -325,10 +359,10 @@ def runClassifier(args, options):
     analysis(classifier, guesses, testLabels, testData, rawTestData, printImage)
 
     # do odds ratio computation if specified at command line
-    if((options.odds) & (options.classifier == "naiveBayes" or (options.classifier == "nb")) ):
+    if ((options.odds) & (options.classifier == "naiveBayes" or (options.classifier == "nb"))):
         label1, label2 = options.label1, options.label2
-        features_odds = classifier.findHighOddsFeatures(label1,label2)
-        if(options.classifier == "naiveBayes" or options.classifier == "nb"):
+        features_odds = classifier.findHighOddsFeatures(label1, label2)
+        if (options.classifier == "naiveBayes" or options.classifier == "nb"):
             string3 = "=== Features with highest odd ratio of label %d over label %d ===" % (label1, label2)
         else:
             string3 = "=== Features for which weight(label %d)-weight(label %d) is biggest ===" % (label1, label2)
@@ -336,17 +370,18 @@ def runClassifier(args, options):
         print(string3)
         printImage(features_odds)
 
-    if(options.weights and options.classifier == "perceptron"):
+    if (options.weights and options.classifier == "perceptron"):
         for l in classifier.legalLabels:
             features_weights = classifier.findHighWeightFeatures(l)
-            print("=== Features with high weight for label %d ==="%l)
+            print("=== Features with high weight for label %d ===" % l)
             printImage(features_weights)
 
         from answers import q2
         print("Question 2's answer: ", q2())
 
+
 if __name__ == '__main__':
     # Read input
-    args, options = readCommand( sys.argv[1:] )
+    args, options = readCommand(sys.argv[1:])
     # Run classifier
     runClassifier(args, options)

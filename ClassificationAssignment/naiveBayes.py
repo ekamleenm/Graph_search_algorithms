@@ -25,7 +25,8 @@ class NaiveBayesClassifier(classificationMethod.ClassificationMethod):
         self.legalLabels = legalLabels
         self.type = "naivebayes"
         self.k = 1  # this is the smoothing parameter, ** use it in your train method **
-        self.automaticTuning = False  # Look at this flag to decide whether to choose k automatically ** use this in your train method **
+        self.automaticTuning = False  # Look at this flag to decide whether to choose k automatically ** use this in
+        # your train method **
 
     def setSmoothing(self, k):
         """
@@ -43,7 +44,7 @@ class NaiveBayesClassifier(classificationMethod.ClassificationMethod):
         # this is a list of all features in the training set.
         self.features = list(set([f for datum in trainingData for f in datum.keys()]))
 
-        if (self.automaticTuning):
+        if self.automaticTuning:
             kgrid = [0.0005, 0.001, 0.005, 0.01, 0.02, 0.05, 0.5, 1, 5, 10, 50]
         else:
             kgrid = [self.k]
@@ -66,13 +67,10 @@ class NaiveBayesClassifier(classificationMethod.ClassificationMethod):
 
         bestAccuracyCount = -1  # best accuracy so far on validation set
 
-        # Common training - get all counts from training data
-        # We only do it once - save computation in tuning smoothing parameter
-        commonPrior = util.Counter()  # probability over labels
-        commonConditionalProb = util.Counter()  # Conditional probability of feature feat being 1
+        commonPrior = util.Counter()
+        commonConditionalProb = util.Counter()
         # indexed by (feat, label)
-        commonCounts = util.Counter()  # how many time I have seen feature 'feat' with label 'y'
-        # whatever inactive or active
+        commonCounts = util.Counter()
         bestParams = (commonPrior, commonConditionalProb, kgrid[0])
 
         for i in range(len(trainingData)):
@@ -81,11 +79,11 @@ class NaiveBayesClassifier(classificationMethod.ClassificationMethod):
             "*** YOUR CODE HERE to complete populating commonPrior, commonCounts, and commonConditionalProb ***"
             commonPrior[label] += 1
             for feat, value in datum.items():
+                commonCounts[(feat, label)] += 1
                 if value > 0:
                     commonConditionalProb[(feat, label)] += 1
-                commonCounts[(feat, label)] += 1
 
-        for k in kgrid:  # Smoothing parameter tuning loop!
+        for k in kgrid:
             prior = util.Counter()
             conditionalProb = util.Counter()
             counts = util.Counter()
@@ -102,35 +100,28 @@ class NaiveBayesClassifier(classificationMethod.ClassificationMethod):
             for label in self.legalLabels:
                 for feat in self.features:
                     "*** YOUR CODE HERE to update conditionalProb and counts using Lablace smoothing ***"
-                if (feat, label) in counts:
-                    conditionalProb[(feat, label)] = (commonConditionalProb[(feat, label)] + k) / (
-                                counts[(feat, label)] + 2 * k)
-                else:
-                    conditionalProb[(feat, label)] = k / (2 * k)
-                counts[(feat, label)] = commonCounts[(feat, label)] + 2 * k
+                    conditionalProb[(feat, label)] = (conditionalProb[(feat, label)] + k) / (
+                            counts[(feat, label)] + 2 * k)
 
             # normalizing:
             prior.normalize()
-            for x, count in conditionalProb.items():
-                conditionalProb[x] = count * 1.0 / counts[x]
-
             self.prior = prior
             self.conditionalProb = conditionalProb
+            self.k = k
 
             # evaluating performance on validation set
             predictions = self.classify(validationData)
-            accuracyCount = [predictions[i] == validationLabels[i] for i in range(len(validationLabels))].count(True)
+            accuracyCount = sum([pred == true for pred, true in zip(predictions, validationLabels)])
 
             print(
                 "Performance on validation set for k=%f: (%.1f%%)" % (k, 100.0 * accuracyCount / len(validationLabels)))
             if accuracyCount > bestAccuracyCount:
                 bestParams = (prior, conditionalProb, k)
                 bestAccuracyCount = accuracyCount
-            # end of automatic tuning loop
 
         self.prior, self.conditionalProb, self.k = bestParams
         print("Best Performance on validation set for k=%f: (%.1f%%)" % (
-        self.k, 100.0 * bestAccuracyCount / len(validationLabels)))
+            self.k, 100.0 * bestAccuracyCount / len(validationLabels)))
 
     def classify(self, testData):
         """
@@ -138,7 +129,7 @@ class NaiveBayesClassifier(classificationMethod.ClassificationMethod):
         You shouldn't modify this method.
         """
         guesses = []
-        self.posteriors = []  # Log posteriors are stored for later data analysis
+        self.posteriors = []
         for datum in testData:
             posterior = self.calculateLogJointProbabilities(datum)
             guesses.append(posterior.argMax())
@@ -158,7 +149,14 @@ class NaiveBayesClassifier(classificationMethod.ClassificationMethod):
 
         for label in self.legalLabels:
             "*** YOUR CODE HERE, to populate logJoint() list ***"
-            util.raiseNotDefined()
+            logJoint[label] = math.log(self.prior[label])
+
+            for feature, value in datum.items():
+                if value > 0:
+                    logJoint[label] += math.log(self.conditionalProb[(feature, label)])
+                else:
+                    logJoint[label] += math.log(1 - self.conditionalProb[(feature, label)])
+
         return logJoint
 
     def findHighOddsFeatures(self, label1, label2):
@@ -171,12 +169,12 @@ class NaiveBayesClassifier(classificationMethod.ClassificationMethod):
         featuresOdds = []
 
         "*** YOUR CODE HERE, to populate featureOdds based on above formula. ***"
-        for feat in self.features:
-            if (feat, label1) in self.conditionalProb and (feat, label2) in self.conditionalProb:
-                oddsRatio = self.conditionalProb[(feat, label1)] / self.conditionalProb[(feat, label2)]
-                featuresOdds.append((feat, oddsRatio))
+        for feature in self.features:
+            p1 = self.conditionalProb.get((feature, label1), 1e-10)
+            p2 = self.conditionalProb.get((feature, label2), 1e-10)
+            ratio = p1 / p2
+            featuresOdds.append((feature, ratio))
 
-        featuresOdds.sort(key=lambda x: -x[1])
+        featuresOdds.sort(key=lambda x: x[1], reverse=True)
 
-        return [feat for feat, ratio in featuresOdds[:100]]
-
+        return [feature for feature, _ in featuresOdds[:100]]
