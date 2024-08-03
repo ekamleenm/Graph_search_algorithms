@@ -44,72 +44,61 @@ def enhancedFeatureExtractorDigit(datum):
     """
     Your feature extraction playground.
 
-    You should return a util.Counter() of features
-    for this datum (datum is of type samples.Datum).
+    You should return a util.Counter() of features for this datum (datum is of type samples.Datum).
 
     ## DESCRIBE YOUR ENHANCED FEATURES HERE...
-        1. Number of transitions in rows and columns
-        2. Estimated aspect ratio of the digit
-        3. Total count of non-zero pixels
-        4. Percentage of active pixels above the horizontal midpoint
-        5. Percentage of active pixels to the left of the vertical midpoint
+
+    - Number of breaks in horizontal and vertical spaces
+    - Estimated aspect ratio of the digit
+    - Number of nonzero pixels
+    - Percentage of active pixels above the horizontal center line
+    - Percentage of active pixels to the right of the vertical center line
+
     ##
     """
+
     features = basicFeatureExtractorDigit(datum)
-    transition_count = 0
-    pixel_grid = datum.getPixels()
 
-    row_index = 0
-    non_zero_count = 0
-    leftmost_pixel = None
-    above_midpoint_count = 0
+    # Initialize counters
+    breaks = 0
+    nonzero = 0
+    aboveCenter = 0
+    pastRight = 0
 
-    for row in pixel_grid:
-        pixel_active = False
-        col_index = 1
+    pixels = datum.getPixels()
+    width = DIGIT_DATUM_WIDTH
+    height = DIGIT_DATUM_HEIGHT
 
-        for col_value in row[1:]:
-            if col_value != 0:
-                non_zero_count += 1
-                if leftmost_pixel is None or col_index < leftmost_pixel:
-                    leftmost_pixel = col_index
-                if col_index <= len(row) // 2:
-                    above_midpoint_count += 1
+    # Count nonzero pixels and calculate breaks
+    for i in range(len(pixels)):
+        row = pixels[i]
+        for j in range(1, len(row)):
+            if row[j] != 0:
+                nonzero += 1
+                if j <= width / 2:
+                    aboveCenter += 1
+            if row[j] != row[j - 1]:
+                breaks += 1
 
-            if col_value != row[col_index - 1]:
-                transition_count += 1
+    for j in range(len(pixels[0])):
+        col = [p[j] for p in pixels]
+        for i in range(1, len(col)):
+            if col[i] != 0:
+                nonzero += 1
+                if i <= height / 2:
+                    pastRight += 1
+            if col[i] != col[i - 1]:
+                breaks += 1
 
-            col_index += 1
-        row_index += 1
+    # Compute aspect ratio
+    aspectRatio = float(width) / height
 
-    digit_width = len(pixel_grid[0]) - (2 * (leftmost_pixel or 0))
-    topmost_pixel = None
-    right_of_midpoint_count = 0
-
-    for col_index in range(len(pixel_grid[0])):
-        column_data = [pixel_grid[i][col_index] for i in range(len(pixel_grid))]
-        pixel_active = False
-
-        for row_index in range(1, len(column_data)):
-            if column_data[row_index] != 0:
-                non_zero_count += 1
-                if topmost_pixel is None or row_index < topmost_pixel:
-                    topmost_pixel = row_index
-                if row_index <= len(column_data) // 2:
-                    right_of_midpoint_count += 1
-
-            if column_data[row_index] != column_data[row_index - 1]:
-                transition_count += 1
-
-    digit_height = len(pixel_grid) - (2 * (topmost_pixel or 0))
-    aspect_ratio = float(digit_width) / digit_height if digit_height > 0 else 1
-
-    # Adding features to the feature set
-    features[0] = 1.0 if transition_count > 175 else 0.0
-    features[1] = 1.0 if aspect_ratio < 0.69 else 0.0
-    features[2] = 1.0 if non_zero_count > 300 else 0.0
-    features[3] = 1.0 if float(above_midpoint_count) / non_zero_count > 0.35 else 0.0
-    features[4] = 1.0 if float(right_of_midpoint_count) / non_zero_count < 0.27 else 0.0
+    # Add features to the feature dictionary
+    features['breaks'] = 1.0 if breaks > 175 else 0.0
+    features['aspect_ratio'] = 1.0 if aspectRatio < 0.69 else 0.0
+    features['nonzero'] = 1.0 if nonzero > 300 else 0.0
+    features['percent_above_center'] = 1.0 if float(aboveCenter) / nonzero > 0.35 else 0.0
+    features['percent_right'] = 1.0 if float(pastRight) / nonzero < 0.27 else 0.0
 
     return features
 
