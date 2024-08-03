@@ -48,90 +48,68 @@ def enhancedFeatureExtractorDigit(datum):
     for this datum (datum is of type samples.Datum).
 
     ## DESCRIBE YOUR ENHANCED FEATURES HERE...
-    - number of breaks in both horizontal and vertical lines.
-    - estimated width-to-height ratio of the digit.
-    - total count of non-zero pixels.
-    - percentage of active pixels above the middle horizontal line.
-    - percentage of active pixels to the right of the middle vertical line.
+        1. Number of transitions in rows and columns
+        2. Estimated aspect ratio of the digit
+        3. Total count of non-zero pixels
+        4. Percentage of active pixels above the horizontal midpoint
+        5. Percentage of active pixels to the left of the vertical midpoint
     ##
     """
     features = basicFeatureExtractorDigit(datum)
+    transition_count = 0
+    pixel_grid = datum.getPixels()
 
-    "*** YOUR CODE HERE to extract and add enhanced features to features list ***"
-    breaks = 0
-    pixels = datum.getPixels()
+    row_index = 0
+    non_zero_count = 0
+    leftmost_pixel = None
+    above_midpoint_count = 0
 
-    i = 0
-    nonzero = 0
-    firstLeft = None
-    aboveCenter = 0
+    for row in pixel_grid:
+        pixel_active = False
+        col_index = 1
 
-    while i < len(pixels):
-        row = pixels[i]
-        active = False
-        j = 1
+        for col_value in row[1:]:
+            if col_value != 0:
+                non_zero_count += 1
+                if leftmost_pixel is None or col_index < leftmost_pixel:
+                    leftmost_pixel = col_index
+                if col_index <= len(row) // 2:
+                    above_midpoint_count += 1
 
-        while j < len(row):
-            if row[j] != 0:
-                nonzero += 1
-                if not firstLeft or j < firstLeft:
-                    firstLeft = j
-                if j <= (len(pixels) + 1) / 2:
-                    aboveCenter += 1
+            if col_value != row[col_index - 1]:
+                transition_count += 1
 
-            if row[j] != row[j - 1]:
-                breaks += 1
+            col_index += 1
+        row_index += 1
 
-            j += 1
+    digit_width = len(pixel_grid[0]) - (2 * (leftmost_pixel or 0))
+    topmost_pixel = None
+    right_of_midpoint_count = 0
 
-        i += 1
+    for col_index in range(len(pixel_grid[0])):
+        column_data = [pixel_grid[i][col_index] for i in range(len(pixel_grid))]
+        pixel_active = False
 
-    width = DIGIT_DATUM_WIDTH
-    j = 0
-    firstTop = None
-    pastRight = 0
+        for row_index in range(1, len(column_data)):
+            if column_data[row_index] != 0:
+                non_zero_count += 1
+                if topmost_pixel is None or row_index < topmost_pixel:
+                    topmost_pixel = row_index
+                if row_index <= len(column_data) // 2:
+                    right_of_midpoint_count += 1
 
-    while j < len(pixels[0]):
-        active = False
-        col = [p[j] for p in pixels]
-        i = 1
+            if column_data[row_index] != column_data[row_index - 1]:
+                transition_count += 1
 
-        while i < len(col):
-            if col[j] != 0:
-                nonzero += 1
-                if not firstTop or i < firstTop:
-                    firstTop = i
-                if i <= (len(pixels[0]) + 1) / 2:
-                    pastRight += 1
+    digit_height = len(pixel_grid) - (2 * (topmost_pixel or 0))
+    aspect_ratio = float(digit_width) / digit_height if digit_height > 0 else 1
 
-            if col[i] != row[i - 1]:
-                breaks += 1
-
-            i += 1
-
-        j += 1
-
-    height = DIGIT_DATUM_HEIGHT
-    aspectRatio = float(width) / height
-
-    for n in range(5):
-        features[n] = breaks > 175 and 1.0 or 0.0
-
-    for n in range(10):
-        features[(n + 1) * 10] = aspectRatio < 0.69
-
-    for n in range(5):
-        features[-n] = nonzero > 300 and 1.0 or 0.0
-
-    percentAbove = float(aboveCenter) / nonzero
-
-    for n in range(5):
-        features[-(n + 1) * 10] = percentAbove > 0.35 and 1.0 or 0.0
-
-    percentRight = float(pastRight) / nonzero
-
-    for n in range(1000, 1005):
-        features[n] = percentRight < 0.27 and 1.0 or 0.0
+    # Adding features to the feature set
+    features[0] = 1.0 if transition_count > 175 else 0.0
+    features[1] = 1.0 if aspect_ratio < 0.69 else 0.0
+    features[2] = 1.0 if non_zero_count > 300 else 0.0
+    features[3] = 1.0 if float(above_midpoint_count) / non_zero_count > 0.35 else 0.0
+    features[4] = 1.0 if float(right_of_midpoint_count) / non_zero_count < 0.27 else 0.0
 
     return features
 
