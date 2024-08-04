@@ -99,21 +99,21 @@ def enhancedFeatureExtractorDigit(datum):
 
     # Adding enhanced features
     for n in range(5):
-        features[n] = 1.0 if transition_count > 175 else 0.0
+        features[n] = 1.0 if transition_count > 182 else 0.0
 
     for n in range(10):
-        features[(n + 1) * 10] = 1.0 if aspect_ratio < 0.69 else 0.0
+        features[(n + 1) * 10] = 1.0 if aspect_ratio < 0.80 else 0.0
 
     for n in range(5):
-        features[-n] = 1.0 if active_pixel_count > 300 else 0.0
+        features[-n] = 1.0 if active_pixel_count > 290 else 0.0
 
     percentage_above_midline = float(above_midline_count) / active_pixel_count
     for n in range(5):
-        features[-(n + 1) * 10] = 1.0 if percentage_above_midline > 0.35 else 0.0
+        features[-(n + 1) * 10] = 1.0 if percentage_above_midline > 0.70 else 0.0
 
     percentage_right_side = float(right_side_count) / active_pixel_count
     for n in range(1000, 1005):
-        features[n] = 1.0 if percentage_right_side < 0.27 else 0.0
+        features[n] = 1.0 if percentage_right_side < 0.24 else 0.0
 
     return features
 
