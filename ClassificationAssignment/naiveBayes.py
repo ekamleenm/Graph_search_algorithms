@@ -63,7 +63,6 @@ class NaiveBayesClassifier(classificationMethod.ClassificationMethod):
         To get the list of all possible features or labels, use self.features and
         self.legalLabels.
         """
-
         bestAccuracyCount = -1  # best accuracy so far on validation set
 
         # Common training - get all counts from training data

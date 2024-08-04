@@ -44,61 +44,76 @@ def enhancedFeatureExtractorDigit(datum):
     """
     Your feature extraction playground.
 
-    You should return a util.Counter() of features for this datum (datum is of type samples.Datum).
+    You should return a util.Counter() of features
+    for this datum (datum is of type samples.Datum).
 
     ## DESCRIBE YOUR ENHANCED FEATURES HERE...
-
-    - Number of breaks in horizontal and vertical spaces
-    - Estimated aspect ratio of the digit
-    - Number of nonzero pixels
-    - Percentage of active pixels above the horizontal center line
-    - Percentage of active pixels to the right of the vertical center line
-
+       Count of transitions in rows and columns
+       Calculate digit's width-to-height ratio.
+       count of total active pixels.
+       Calculate upper half pixel density.
+       Calculate right-side pixel concentration.
     ##
     """
-
     features = basicFeatureExtractorDigit(datum)
 
-    # Initialize counters
-    breaks = 0
-    nonzero = 0
-    aboveCenter = 0
-    pastRight = 0
+    # Initialize tracking variables
+    transition_count = 0
+    pixel_data = datum.getPixels()
+    active_pixel_count = 0
+    leftmost_active = None
+    above_midline_count = 0
 
-    pixels = datum.getPixels()
-    width = DIGIT_DATUM_WIDTH
-    height = DIGIT_DATUM_HEIGHT
+    # Loop through each row
+    for i in range(len(pixel_data)):
+        current_row = pixel_data[i]
+        for j in range(1, len(current_row)):
+            if current_row[j] != 0:
+                active_pixel_count += 1
+                if leftmost_active is None or j < leftmost_active:
+                    leftmost_active = j
+                if j <= (len(pixel_data) + 1) / 2:
+                    above_midline_count += 1
+            if current_row[j] != current_row[j - 1]:
+                transition_count += 1
 
-    # Count nonzero pixels and calculate breaks
-    for i in range(len(pixels)):
-        row = pixels[i]
-        for j in range(1, len(row)):
-            if row[j] != 0:
-                nonzero += 1
-                if j <= width / 2:
-                    aboveCenter += 1
-            if row[j] != row[j - 1]:
-                breaks += 1
+    image_width = DIGIT_DATUM_WIDTH
+    topmost_active = None
+    right_side_count = 0
 
-    for j in range(len(pixels[0])):
-        col = [p[j] for p in pixels]
-        for i in range(1, len(col)):
-            if col[i] != 0:
-                nonzero += 1
-                if i <= height / 2:
-                    pastRight += 1
-            if col[i] != col[i - 1]:
-                breaks += 1
+    # Loop through each column
+    for j in range(len(pixel_data[0])):
+        current_column = [row[j] for row in pixel_data]
+        for i in range(1, len(current_column)):
+            if current_column[i] != 0:
+                active_pixel_count += 1
+                if topmost_active is None or i < topmost_active:
+                    topmost_active = i
+                if i <= (len(pixel_data[0]) + 1) / 2:
+                    right_side_count += 1
+            if current_column[i] != current_column[i - 1]:
+                transition_count += 1
 
-    # Compute aspect ratio
-    aspectRatio = float(width) / height
+    image_height = DIGIT_DATUM_HEIGHT
+    aspect_ratio = float(image_width) / image_height
 
-    # Add features to the feature dictionary
-    features['breaks'] = 1.0 if breaks > 175 else 0.0
-    features['aspect_ratio'] = 1.0 if aspectRatio < 0.69 else 0.0
-    features['nonzero'] = 1.0 if nonzero > 300 else 0.0
-    features['percent_above_center'] = 1.0 if float(aboveCenter) / nonzero > 0.35 else 0.0
-    features['percent_right'] = 1.0 if float(pastRight) / nonzero < 0.27 else 0.0
+    # Adding enhanced features
+    for n in range(5):
+        features[n] = 1.0 if transition_count > 175 else 0.0
+
+    for n in range(10):
+        features[(n + 1) * 10] = 1.0 if aspect_ratio < 0.69 else 0.0
+
+    for n in range(5):
+        features[-n] = 1.0 if active_pixel_count > 300 else 0.0
+
+    percentage_above_midline = float(above_midline_count) / active_pixel_count
+    for n in range(5):
+        features[-(n + 1) * 10] = 1.0 if percentage_above_midline > 0.35 else 0.0
+
+    percentage_right_side = float(right_side_count) / active_pixel_count
+    for n in range(1000, 1005):
+        features[n] = 1.0 if percentage_right_side < 0.27 else 0.0
 
     return features
 
